@@ -499,6 +499,422 @@
       .history-item { grid-template-columns: 1fr; }
       .signature-preview { width: 100%; height: 150px; }
     }
+
+    /* Professional tablet redesign */
+    :root {
+      --bg: #f3f6f8;
+      --surface: #ffffff;
+      --ink: #172033;
+      --muted: #657282;
+      --primary: #a98400;
+      --accent: #d8bd68;
+      --line: #dde5ec;
+      --warn: #9b6a1f;
+      --warn-bg: #fff7df;
+      --done: #9a4646;
+      --done-bg: #fff0f0;
+      --ok-bg: #f5efd9;
+      --side: #111820;
+    }
+    body {
+      background:
+        linear-gradient(180deg, #f7f9fb 0%, #eef3f6 100%);
+      font-size: 16px;
+    }
+    .app {
+      grid-template-columns: 286px minmax(0, 1fr);
+      background: transparent;
+    }
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 26px 22px;
+      gap: 18px;
+      background: #111820;
+      border-right: 1px solid rgba(216,189,104,.2);
+    }
+    .brand {
+      gap: 14px;
+      font-size: 22px;
+    }
+    .brand img {
+      width: 154px;
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 16px 36px rgba(0,0,0,.22);
+    }
+    .brand small {
+      color: #d8bd68;
+      font-size: 13px;
+    }
+    .module-nav {
+      gap: 10px;
+      margin: 10px 0 4px;
+    }
+    .nav-item {
+      min-height: 54px;
+      border-radius: 14px;
+      border-color: rgba(216,189,104,.22);
+      color: #dfe7ee;
+      padding: 0 16px;
+    }
+    .nav-item.active {
+      background: rgba(216,189,104,.16);
+      border-color: rgba(216,189,104,.72);
+      box-shadow: inset 3px 0 0 #d8bd68;
+    }
+    .side-card {
+      border-radius: 16px;
+      padding: 16px;
+      background: rgba(255,255,255,.055);
+      border-color: rgba(255,255,255,.1);
+    }
+    .side-card strong {
+      color: #ffffff;
+      font-size: 30px;
+    }
+    .side-card span {
+      color: #c8d3dc;
+      font-size: 14px;
+    }
+    main {
+      padding: clamp(24px, 3.5vw, 48px);
+    }
+    .toolbar {
+      align-items: start;
+      gap: 22px;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 {
+      font-size: clamp(30px, 3.2vw, 44px);
+      line-height: 1.05;
+      color: #172033;
+    }
+    .muted {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .toolbar .actions {
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    button {
+      min-height: 48px;
+      border-radius: 14px;
+      padding: 0 18px;
+      background: #a98400;
+      box-shadow: 0 8px 18px rgba(169,132,0,.14);
+    }
+    button.secondary,
+    .filter {
+      background: #ffffff;
+      color: #4f5f6f;
+      border: 1px solid #d8e2ea;
+      box-shadow: 0 6px 18px rgba(17,24,32,.04);
+    }
+    button.danger {
+      background: #fff3f3;
+      color: #9a4646;
+      border: 1px solid #ffd9d9;
+      box-shadow: none;
+    }
+    button:hover {
+      transform: translateY(-1px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .search {
+      grid-template-columns: minmax(260px, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      margin: 18px 0 24px;
+      padding: 14px;
+      background: rgba(255,255,255,.82);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 16px 40px rgba(17,24,32,.055);
+    }
+    input {
+      min-height: 56px;
+      border-radius: 14px;
+      border-color: #d8e2ea;
+      background: #fbfdff;
+      color: #172033;
+      font-size: 17px;
+      outline: none;
+    }
+    input:focus {
+      border-color: #d8bd68;
+      box-shadow: 0 0 0 4px rgba(216,189,104,.18);
+      background: #ffffff;
+    }
+    .filters {
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+    .filter {
+      min-height: 46px;
+      border-radius: 999px;
+      padding: 0 18px;
+    }
+    .filter.active {
+      background: #172033;
+      border-color: #172033;
+      color: white;
+      box-shadow: 0 10px 22px rgba(23,32,51,.14);
+    }
+    .list {
+      gap: 16px;
+    }
+    .patient {
+      border-radius: 20px;
+      border-color: #dfe7ee;
+      padding: 20px 22px;
+      box-shadow: 0 18px 42px rgba(17,24,32,.07);
+    }
+    .patient-head {
+      gap: 18px;
+      min-height: 64px;
+    }
+    .patient:hover {
+      border-color: rgba(216,189,104,.72);
+    }
+    .name {
+      font-size: 23px;
+      line-height: 1.15;
+      color: #111820;
+    }
+    .sub {
+      color: #657282;
+      font-size: 15px;
+      margin-top: 5px;
+    }
+    .badge {
+      min-width: 112px;
+      height: 46px;
+      border-radius: 999px;
+      background: #f5efd9;
+      color: #8b6d00;
+    }
+    .expanded {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top-color: #e6edf2;
+    }
+    .expanded .actions {
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .bar {
+      height: 10px;
+      background: #e7edf2;
+      margin: 4px 0 18px;
+    }
+    .bar span {
+      background: linear-gradient(90deg, #a98400, #d8bd68);
+    }
+    .history-title {
+      margin-top: 20px;
+      font-size: 17px;
+      color: #172033;
+    }
+    .history {
+      gap: 12px;
+    }
+    .history-item {
+      grid-template-columns: 150px 1fr;
+      gap: 16px;
+      padding: 14px;
+      background: #f7fafc;
+      border: 1px solid #e3ebf1;
+      border-radius: 16px;
+    }
+    .signature-preview {
+      width: 150px;
+      height: 96px;
+      border-radius: 12px;
+      background: white;
+    }
+    .empty-state {
+      min-height: 300px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.75);
+      border-color: #dfe7ee;
+      font-size: 18px;
+    }
+    .home-screen {
+      min-height: calc(100vh - 96px);
+      align-content: center;
+      gap: 24px;
+      padding: 24px 0;
+    }
+    .home-logo {
+      width: min(230px, 46vw);
+      border-radius: 24px;
+      padding: 14px;
+      box-shadow: 0 24px 70px rgba(17,24,32,.15);
+    }
+    .home-title {
+      max-width: 680px;
+      gap: 10px;
+    }
+    .home-title h1 {
+      font-size: clamp(34px, 6vw, 56px);
+      line-height: 1.02;
+    }
+    .home-actions {
+      width: min(680px, 100%);
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .home-tile {
+      min-height: 96px;
+      border-radius: 20px;
+      background: #ffffff;
+      border: 1px solid #dfe7ee;
+      color: #172033;
+      padding: 0 28px 0 90px;
+      font-size: 21px;
+      box-shadow: 0 20px 48px rgba(17,24,32,.08);
+      position: relative;
+    }
+    .home-tile::before {
+      content: "";
+      position: absolute;
+      left: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: #f5efd9;
+      box-shadow: inset 0 0 0 1px rgba(169,132,0,.18);
+    }
+    .home-tile:nth-child(2)::before {
+      background: #eaf2f7;
+      box-shadow: inset 0 0 0 1px rgba(23,32,51,.12);
+    }
+    .home-tile::after {
+      content: "Abrir";
+      margin-left: auto;
+      font-size: 14px;
+      color: #a98400;
+      font-weight: 900;
+    }
+    dialog {
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 32px 90px rgba(17,24,32,.28);
+    }
+    dialog h2 {
+      font-size: 30px;
+      line-height: 1.08;
+      margin-bottom: 18px;
+    }
+    dialog.wide-dialog {
+      width: min(960px, calc(100vw - 32px));
+    }
+    .consent-text {
+      max-height: min(34vh, 300px);
+      border-radius: 18px;
+      background: #fbfdff;
+      border-color: #dfe7ee;
+      padding: 18px 20px;
+    }
+    .form-grid {
+      gap: 16px;
+      margin: 18px 0;
+    }
+    label.field {
+      gap: 8px;
+      color: #4f5f6f;
+    }
+    .signature-pad {
+      height: min(50vh, 460px);
+      border-radius: 20px;
+      border-color: #cddbe6;
+    }
+    .login-screen {
+      background:
+        linear-gradient(135deg, rgba(17,24,32,.96), rgba(32,26,16,.88)),
+        #111820;
+    }
+    .login-card {
+      border-radius: 28px;
+      padding: clamp(28px, 5vw, 44px);
+      box-shadow: 0 36px 100px rgba(0,0,0,.35);
+    }
+    .login-logo {
+      width: 210px;
+      border-radius: 20px;
+    }
+    @media (max-width: 860px) {
+      .app { display: block; }
+      main {
+        min-height: 100vh;
+        padding: 22px;
+      }
+      .toolbar {
+        gap: 16px;
+        padding-bottom: 16px;
+      }
+      .toolbar .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+      }
+      .toolbar .actions button {
+        width: 100%;
+      }
+      .search {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+      .filters {
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+      .patient {
+        padding: 18px;
+        border-radius: 18px;
+      }
+      .patient-head,
+      .detail-top {
+        grid-template-columns: 1fr;
+      }
+      .badge {
+        justify-self: start;
+      }
+      .history-item {
+        grid-template-columns: 1fr;
+      }
+      .signature-preview {
+        width: 100%;
+        height: 132px;
+      }
+      .home-screen {
+        min-height: calc(100vh - 44px);
+        justify-items: stretch;
+      }
+      .home-logo {
+        justify-self: center;
+        width: min(220px, 62vw);
+      }
+      .home-title h1 {
+        font-size: clamp(34px, 9vw, 48px);
+      }
+      .home-tile {
+        min-height: 92px;
+        padding: 0 18px 0 82px;
+        font-size: 19px;
+      }
+      dialog {
+        width: min(720px, calc(100vw - 24px));
+        padding: 22px;
+      }
+    }
   </style>
 </head>
 <body>
