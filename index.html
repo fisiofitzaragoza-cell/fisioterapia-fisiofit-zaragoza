@@ -1,0 +1,1594 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fisioterapia FisioFit Zaragoza</title>
+  <meta name="theme-color" content="#132333">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <style>
+    :root {
+      --bg: #f7f5ef;
+      --surface: #ffffff;
+      --ink: #201a10;
+      --muted: #6f6653;
+      --primary: #a98400;
+      --accent: #d8bd68;
+      --line: #e7dec6;
+      --warn: #9b6a1f;
+      --warn-bg: #fff2d7;
+      --done: #9a4646;
+      --done-bg: #ffe7e7;
+      --ok-bg: #f4ead0;
+      --side: #171a20;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+    }
+    aside {
+      background: var(--side);
+      color: white;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .brand {
+      display: grid;
+      gap: 12px;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: 1.12;
+    }
+    .brand img {
+      width: 178px;
+      max-width: 100%;
+      display: block;
+      border-radius: 10px;
+      background: white;
+      padding: 8px;
+    }
+    .brand small {
+      display: block;
+      color: #e2cf87;
+      font-size: 14px;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+    .side-card {
+      background: rgba(216,189,104,.12);
+      border: 1px solid rgba(216,189,104,.24);
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .side-card strong {
+      display: block;
+      font-size: 32px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .side-card span { color: #e5d8a9; }
+    .cloud-state {
+      color: #e5d8a9;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .module-nav {
+      display: grid;
+      gap: 8px;
+      margin: 4px 0;
+    }
+    .nav-item {
+      justify-content: flex-start;
+      width: 100%;
+      min-height: 50px;
+      background: transparent;
+      color: #f6efd8;
+      border: 1px solid rgba(216,189,104,.24);
+      text-align: left;
+    }
+    .nav-item.active {
+      background: rgba(216,189,104,.18);
+      border-color: rgba(216,189,104,.55);
+      color: white;
+    }
+    main {
+      padding: 28px;
+      overflow: auto;
+    }
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: 0;
+    }
+    .muted { color: var(--muted); }
+    .actions, .row, .filters {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      min-height: 44px;
+      padding: 0 16px;
+      color: white;
+      background: var(--primary);
+      font-weight: 850;
+      cursor: pointer;
+      font: inherit;
+      white-space: nowrap;
+    }
+    button.secondary {
+      background: var(--surface);
+      color: var(--primary);
+      border: 1px solid var(--line);
+    }
+    button.warning {
+      background: var(--warn-bg);
+      color: var(--warn);
+    }
+    button.danger {
+      background: var(--done-bg);
+      color: var(--done);
+    }
+    button.selected {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    button:disabled {
+      background: #b7bfcb;
+      cursor: not-allowed;
+    }
+    .search {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      margin: 16px 0;
+    }
+    input {
+      width: 100%;
+      min-height: 52px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: white;
+      padding: 0 16px;
+      font: inherit;
+      font-size: 17px;
+    }
+    .filter {
+      background: white;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+    .filter.active {
+      color: white;
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .patient {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 28px rgba(23, 32, 51, .05);
+    }
+    .patient-detail {
+      min-height: 520px;
+    }
+    .detail-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+    .patient-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      cursor: pointer;
+    }
+    .name {
+      font-size: 22px;
+      font-weight: 900;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 2px;
+    }
+    .badge {
+      min-width: 116px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: 900;
+      background: var(--ok-bg);
+      color: var(--primary);
+    }
+    .badge.warn { background: var(--warn-bg); color: var(--warn); }
+    .badge.done { background: var(--done-bg); color: var(--done); }
+    .expanded {
+      border-top: 1px solid var(--line);
+      margin-top: 14px;
+      padding-top: 14px;
+    }
+    .bar {
+      height: 12px;
+      background: var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 10px 0 14px;
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+    }
+    .history {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .history-title {
+      font-size: 18px;
+      font-weight: 900;
+      margin-top: 12px;
+    }
+    .signature-preview {
+      width: 160px;
+      height: 92px;
+      object-fit: contain;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 6px;
+      cursor: zoom-in;
+    }
+    .history-item {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 14px;
+      align-items: center;
+      padding: 10px;
+      background: #f9fbfd;
+      border-radius: 14px;
+    }
+    .completed-bono {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fffdf8;
+      margin-top: 12px;
+    }
+    .completed-bono-title {
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 14px 0;
+    }
+    label.field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    label.field.full {
+      grid-column: 1 / -1;
+    }
+    .consent-text {
+      max-height: 260px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffdf8;
+      padding: 16px;
+      color: #3a2b10;
+      line-height: 1.55;
+    }
+    .consent-text p {
+      margin: 0 0 10px;
+    }
+    .consent-text strong {
+      color: var(--ink);
+    }
+    .consent-card .badge {
+      background: #f4ead0;
+    }
+    .consent-meta {
+      display: grid;
+      gap: 6px;
+      margin: 12px 0;
+      color: var(--muted);
+    }
+    .empty-state {
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: white;
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      color: var(--muted);
+      padding: 24px;
+    }
+    dialog {
+      width: min(760px, calc(100vw - 28px));
+      border: 0;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 28px 90px rgba(23, 32, 51, .28);
+    }
+    dialog::backdrop { background: rgba(19, 35, 51, .42); }
+    #signDialog::backdrop { background: var(--bg); }
+    #consentDialog::backdrop { background: var(--bg); }
+    dialog.wide-dialog { width: min(980px, calc(100vw - 28px)); }
+    body.signing .app,
+    body.consent-signing .app { visibility: hidden; }
+    dialog h2 { margin: 0 0 14px; font-size: 26px; }
+    .signature-pad {
+      width: 100%;
+      height: 430px;
+      border: 2px solid #cfdbe7;
+      border-radius: 16px;
+      background: white;
+      touch-action: none;
+      display: block;
+      margin: 14px 0;
+    }
+    .big-signature {
+      width: 100%;
+      max-height: 560px;
+      object-fit: contain;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(23, 26, 32, .96), rgba(32, 26, 16, .92)),
+        var(--side);
+      display: grid;
+      place-items: center;
+      z-index: 40;
+      padding: 20px;
+    }
+    .login-card {
+      width: min(520px, 100%);
+      background: white;
+      border-radius: 22px;
+      padding: 30px;
+      box-shadow: 0 26px 80px rgba(0,0,0,.22);
+    }
+    .login-logo {
+      width: 190px;
+      max-width: 70%;
+      display: block;
+      margin: 0 auto 18px;
+      border-radius: 12px;
+    }
+    .login-card h1 {
+      text-align: center;
+      font-size: clamp(27px, 6vw, 36px);
+      line-height: 1.08;
+      margin-bottom: 4px;
+    }
+    .remember-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-weight: 750;
+      margin: 10px 0 14px;
+    }
+    .remember-row input {
+      width: 20px;
+      min-height: 20px;
+      accent-color: var(--primary);
+    }
+    .config-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      margin: 12px 0;
+      background: #fffdf8;
+    }
+    .config-box summary {
+      cursor: pointer;
+      font-weight: 850;
+      color: var(--primary);
+    }
+    .local-backup {
+      border: 1px solid rgba(176, 135, 0, .3);
+      border-radius: 14px;
+      padding: 12px;
+      margin: 12px 0;
+      background: #fffaf0;
+    }
+    .local-backup button {
+      margin-top: 8px;
+    }
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; }
+      aside { display: none; }
+      main { padding: 18px; }
+      .toolbar { grid-template-columns: 1fr; }
+      .search { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .history-item { grid-template-columns: 1fr; }
+      .signature-preview { width: 100%; height: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <img class="login-logo" src="icons/logo-definitivo.png" alt="FisioFit Zaragoza">
+      <h1>Fisioterapia FisioFit Zaragoza</h1>
+      <p class="muted" style="text-align:center">Acceso privado para bonos, consentimientos y firmas.</p>
+
+      <input id="loginEmail" autocomplete="username" placeholder="Email">
+      <input id="loginPassword" autocomplete="current-password" type="password" placeholder="Contraseña">
+      <label class="remember-row">
+        <input id="rememberCredentials" type="checkbox">
+        <span>Recordar usuario y contraseña en este dispositivo</span>
+      </label>
+
+      <div class="local-backup" id="localBackupBox" hidden>
+        <strong>Copia local detectada</strong>
+        <p class="muted" id="localBackupText">Hay datos guardados en este dispositivo.</p>
+        <button class="secondary" onclick="backup()">Descargar copia local</button>
+      </div>
+
+      <details class="config-box" id="supabaseConfigDetails">
+        <summary>Ajustes avanzados</summary>
+        <p class="muted">Supabase ya viene configurado. Solo tocar si cambia el proyecto.</p>
+        <input id="loginSupabaseUrl" placeholder="URL Supabase">
+        <input id="loginSupabaseKey" placeholder="Clave publica Supabase">
+        <button class="secondary" type="button" onclick="testSupabaseFromLogin()">Probar conexión</button>
+      </details>
+
+      <p class="muted" id="loginStatus">Introduce tu email y contraseña para entrar.</p>
+      <div class="actions" style="justify-content:flex-end;margin-top:14px">
+        <button onclick="loginFromScreen()">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <img src="icons/logo-definitivo.png" alt="FisioFit Zaragoza">
+        <span>Fisioterapia FisioFit Zaragoza<small>Bonos y consentimientos</small></span>
+      </div>
+      <nav class="module-nav" aria-label="Secciones">
+        <button class="nav-item active" data-section="bonos" onclick="setSection('bonos')">Bonos fisioterapia</button>
+        <button class="nav-item" data-section="consents" onclick="setSection('consents')">Consentimiento informado</button>
+      </nav>
+      <div class="side-card"><strong id="sidePatients">0</strong><span>bonos activos</span></div>
+      <div class="side-card"><strong id="sidePending">0</strong><span>sesiones pendientes</span></div>
+      <div class="side-card"><strong id="sideSigned">0</strong><span>firmas registradas</span></div>
+      <div class="side-card"><strong id="sideConsents">0</strong><span>consentimientos</span></div>
+    </aside>
+    <main>
+      <section class="toolbar">
+        <div>
+          <h1 id="mainTitle">Bonos de fisioterapia</h1>
+          <div class="muted" id="mainSubtitle">Lista alfabética, firma grande y registros exportables.</div>
+        </div>
+        <div class="actions">
+          <button class="secondary" onclick="backup()">Copia</button>
+          <button class="secondary" onclick="restore()">Restaurar</button>
+          <button class="secondary" id="cloudButton" onclick="openCloudDialog()">Supabase</button>
+          <button id="newBonusButton" onclick="openCreate()">Nuevo bono</button>
+          <button id="newConsentButton" onclick="openConsentDialog()" hidden>Nuevo consentimiento</button>
+        </div>
+      </section>
+      <section class="search" id="bonusControls">
+        <input id="search" placeholder="Buscar paciente por nombre" oninput="render()">
+        <div class="filters">
+          <button class="filter active" data-filter="all" onclick="setFilter('all')">Todos</button>
+          <button class="filter" data-filter="low" onclick="setFilter('low')">Casi agotados</button>
+          <button class="filter" data-filter="done" onclick="setFilter('done')">Completados</button>
+        </div>
+      </section>
+      <section class="search" id="consentControls" hidden>
+        <input id="consentSearch" placeholder="Buscar consentimiento por nombre, apellidos o DNI" oninput="render()">
+        <div class="filters">
+          <button class="filter consent-filter active" data-consent-filter="all" onclick="setConsentFilter('all')">Todos</button>
+          <button class="filter consent-filter" data-consent-filter="recent" onclick="setConsentFilter('recent')">Recientes</button>
+        </div>
+      </section>
+      <section class="list" id="list"></section>
+      <input id="restoreFile" type="file" accept="application/json" hidden>
+    </main>
+  </div>
+
+  <dialog id="newDialog">
+    <h2>Nuevo bono</h2>
+    <input id="patientName" placeholder="Nombre del paciente" autocomplete="off">
+    <div class="actions">
+      <button class="secondary" id="newFive" onclick="selectNewTotal(5)">Bono 5 sesiones</button>
+      <button class="secondary selected" id="newTen" onclick="selectNewTotal(10)">Bono 10 sesiones</button>
+    </div>
+    <div class="actions" style="justify-content:flex-end;margin-top:14px">
+      <button class="secondary" onclick="newDialog.close()">Cancelar</button>
+      <button onclick="createPatient()">Aceptar</button>
+    </div>
+  </dialog>
+
+  <dialog id="renewDialog">
+    <h2>Renovar bono</h2>
+    <p class="muted" id="renewText"></p>
+    <div class="actions">
+      <button class="secondary" onclick="renew(5)">Añadir 5 sesiones</button>
+      <button onclick="renew(10)">Añadir 10 sesiones</button>
+    </div>
+  </dialog>
+
+  <dialog id="signDialog">
+    <h2>Firmar sesión</h2>
+    <p class="muted" id="signRemaining">Firma grande para tablet. Antes de guardar se pedirá confirmación.</p>
+    <canvas class="signature-pad" id="signature" width="1100" height="620"></canvas>
+    <div class="actions" style="justify-content:flex-end">
+      <button class="secondary" onclick="clearSignature()">Limpiar</button>
+      <button class="secondary" onclick="signDialog.close()">Cancelar</button>
+      <button onclick="confirmSignature()">Guardar</button>
+    </div>
+  </dialog>
+
+  <dialog id="consentDialog" class="wide-dialog">
+    <h2>Consentimiento informado fisioterapia</h2>
+    <div class="consent-text">
+      <p><strong>Declaro haber sido informado/a</strong> por el/la fisioterapeuta sobre el tratamiento de fisioterapia que voy a recibir, pudiendo incluir técnicas manuales, ejercicio terapéutico, agentes físicos y, en caso necesario, técnicas invasivas como punción seca y/o electropunción.</p>
+      <p><strong>Entiendo que estos tratamientos</strong> pueden provocar en ocasiones molestias leves, dolor post-sesión, hematomas, mareos, cansancio u otros efectos secundarios transitorios.</p>
+      <p><strong>He tenido la oportunidad de resolver mis dudas</strong> y autorizo de manera voluntaria la aplicación de las técnicas que el profesional considere adecuadas para mi recuperación.</p>
+      <p><strong>Declaro no padecer enfermedades o condiciones</strong> que contraindiquen el tratamiento, salvo las ya informadas al profesional.</p>
+      <p><strong>Política de cancelación:</strong> las citas deben modificarse o cancelarse con al menos 24 horas de antelación. En caso contrario, la clínica se reserva el derecho de cobrar el 50% del importe de la sesión.</p>
+    </div>
+    <div class="form-grid">
+      <label class="field">
+        Nombre *
+        <input id="consentFirstName" autocomplete="off" placeholder="Nombre">
+      </label>
+      <label class="field">
+        Apellidos *
+        <input id="consentLastName" autocomplete="off" placeholder="Apellidos">
+      </label>
+      <label class="field">
+        DNI *
+        <input id="consentDni" autocomplete="off" placeholder="DNI">
+      </label>
+    </div>
+    <p class="muted">Firma del paciente</p>
+    <canvas class="signature-pad" id="consentSignature" width="1100" height="560"></canvas>
+    <div class="actions" style="justify-content:flex-end">
+      <button class="secondary" onclick="clearConsentSignature()">Limpiar</button>
+      <button class="secondary" onclick="consentDialog.close()">Cancelar</button>
+      <button onclick="saveConsent()">Guardar consentimiento</button>
+    </div>
+  </dialog>
+
+  <dialog id="previewDialog">
+    <h2>Firma guardada</h2>
+    <img class="big-signature" id="bigSignature" alt="Firma ampliada">
+    <div class="actions" style="justify-content:flex-end;margin-top:14px">
+      <button onclick="previewDialog.close()">Cerrar</button>
+    </div>
+  </dialog>
+
+  <dialog id="cloudDialog">
+    <h2>Supabase</h2>
+    <p class="muted">Conecta la app a Supabase para sincronizar datos entre tablets y no depender solo del navegador.</p>
+    <input id="supabaseUrl" placeholder="URL Supabase">
+    <input id="supabaseKey" placeholder="Clave publica Supabase">
+    <input id="supabaseEmail" placeholder="Email de usuario">
+    <input id="supabasePassword" type="password" placeholder="Contraseña">
+    <p class="muted" id="cloudStatus">Sin conectar.</p>
+    <div class="actions" style="justify-content:flex-end">
+      <button class="secondary" onclick="cloudDialog.close()">Cerrar</button>
+      <button class="secondary" onclick="signOutCloud()">Desconectar</button>
+      <button onclick="connectCloud()">Conectar</button>
+    </div>
+  </dialog>
+
+  <script>
+    const list = document.querySelector("#list");
+    const signDialog = document.querySelector("#signDialog");
+    const consentDialog = document.querySelector("#consentDialog");
+    const previewDialog = document.querySelector("#previewDialog");
+    const cloudDialog = document.querySelector("#cloudDialog");
+    const canvas = document.querySelector("#signature");
+    const ctx = canvas.getContext("2d");
+    const consentCanvas = document.querySelector("#consentSignature");
+    const consentCtx = consentCanvas.getContext("2d");
+    const mainTitle = document.querySelector("#mainTitle");
+    const mainSubtitle = document.querySelector("#mainSubtitle");
+    const bonusControls = document.querySelector("#bonusControls");
+    const consentControls = document.querySelector("#consentControls");
+    const newBonusButton = document.querySelector("#newBonusButton");
+    const newConsentButton = document.querySelector("#newConsentButton");
+    let section = "bonos";
+    let expandedId = null;
+    let detail = null;
+    let consentDetailId = null;
+    let current = null;
+    let filter = "all";
+    let consentFilter = "all";
+    let newTotal = 10;
+    let drawing = false;
+    let signed = false;
+    let consentDrawing = false;
+    let consentSigned = false;
+    let supabaseClient = null;
+    let cloudOnline = false;
+    let cloudSaveTimer = null;
+    let cloudSaving = false;
+    let cloudChannel = null;
+    const DEFAULT_SUPABASE_URL = "https://idwekwrprimibiplcxzm.supabase.co";
+    const DEFAULT_SUPABASE_KEY = "sb_publishable_d67JRiLMAjWYKRAU2OFI-g_eQYOiyNt";
+    const SUPABASE_CONFIG_KEY = "fisio_supabase_config";
+    const SAVED_LOGIN_KEY = "fisio_saved_login";
+    let patients = getStoredPatients();
+    patients = patients.map(p => ({ ...p, completed: Boolean(p.completed) }));
+    let consents = getStoredConsents().map(normalizeConsent);
+
+    function getStoredPatients() {
+      try {
+        const stored = JSON.parse(localStorage.getItem("fisio_preview") || "[]");
+        return Array.isArray(stored) ? stored : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function getStoredConsents() {
+      try {
+        const stored = JSON.parse(localStorage.getItem("fisio_consents") || "[]");
+        return Array.isArray(stored) ? stored : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function normalizeConsent(consent) {
+      return {
+        id: consent.id || crypto.randomUUID(),
+        firstName: consent.firstName || "",
+        lastName: consent.lastName || "",
+        dni: consent.dni || "",
+        date: consent.date || "",
+        iso: consent.iso || new Date().toISOString(),
+        signature: consent.signature || "",
+        documentText: consent.documentText || consentDocumentText(),
+        textVersion: consent.textVersion || "fisiofit-consent-v1"
+      };
+    }
+
+    function consentDocumentText() {
+      return [
+        "Declaro haber sido informado/a por el/la fisioterapeuta sobre el tratamiento de fisioterapia que voy a recibir, pudiendo incluir técnicas manuales, ejercicio terapéutico, agentes físicos y, en caso necesario, técnicas invasivas como punción seca y/o electropunción.",
+        "Entiendo que estos tratamientos pueden provocar en ocasiones molestias leves, dolor post-sesión, hematomas, mareos, cansancio u otros efectos secundarios transitorios.",
+        "He tenido la oportunidad de resolver mis dudas y autorizo de manera voluntaria la aplicación de las técnicas que el profesional considere adecuadas para mi recuperación.",
+        "Declaro no padecer enfermedades o condiciones que contraindiquen el tratamiento, salvo las ya informadas al profesional.",
+        "Política de cancelación: las citas deben modificarse o cancelarse con al menos 24 horas de antelación. En caso contrario, la clínica se reserva el derecho de cobrar el 50% del importe de la sesión."
+      ].join("\n\n");
+    }
+
+    function hideLogin() {
+      document.querySelector("#loginScreen").style.display = "none";
+    }
+
+    function showLogin(message) {
+      document.querySelector("#loginScreen").style.display = "grid";
+      if (message) {
+        document.querySelector("#loginStatus").textContent = message;
+      }
+    }
+
+    function hydrateLoginScreen() {
+      const config = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      const saved = JSON.parse(localStorage.getItem(SAVED_LOGIN_KEY) || "{}");
+      document.querySelector("#loginSupabaseUrl").value = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
+      document.querySelector("#loginSupabaseKey").value = config.key || DEFAULT_SUPABASE_KEY;
+      document.querySelector("#loginEmail").value = saved.email || config.email || "";
+      document.querySelector("#loginPassword").value = saved.password || "";
+      document.querySelector("#rememberCredentials").checked = Boolean(saved.remember);
+      document.querySelector("#supabaseConfigDetails").open = false;
+      const localPatients = getStoredPatients();
+      const localConsents = getStoredConsents();
+      const localBackupBox = document.querySelector("#localBackupBox");
+      const localCount = localPatients.length + localConsents.length;
+      localBackupBox.hidden = localCount === 0;
+      document.querySelector("#localBackupText").textContent = localCount === 1
+        ? "Hay 1 registro guardado en este dispositivo. Haz una copia antes de sincronizar."
+        : `Hay ${localCount} registros guardados en este dispositivo. Haz una copia antes de sincronizar.`;
+    }
+    function save() {
+      localStorage.setItem("fisio_preview", JSON.stringify(patients));
+      localStorage.setItem("fisio_consents", JSON.stringify(consents));
+      queueCloudSave();
+    }
+    function remaining(p) { return Math.max(0, p.total - p.sessions.length); }
+    function progress(p) { return Math.round((p.sessions.length / p.total) * 100); }
+    function status(p) { return p.completed ? "done" : remaining(p) <= 2 ? "warn" : "ok"; }
+    function statusText(p) {
+      if (p.completed) return p.completedAt ? `completado · ${p.completedAt}` : "completado";
+      if (remaining(p) === 0) return "agotado pendiente de cerrar";
+      return remaining(p) <= 2 ? "casi agotado" : "activo";
+    }
+
+    function render() {
+      patients.sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+      consents.sort((a, b) => new Date(b.iso || 0) - new Date(a.iso || 0));
+      document.querySelectorAll(".nav-item").forEach(btn => btn.classList.toggle("active", btn.dataset.section === section));
+      document.querySelectorAll(".filter").forEach(btn => btn.classList.toggle("active", btn.dataset.filter === filter));
+      document.querySelectorAll(".consent-filter").forEach(btn => btn.classList.toggle("active", btn.dataset.consentFilter === consentFilter));
+      const active = patients.filter(p => !p.completed);
+      document.querySelector("#sidePatients").textContent = active.length;
+      document.querySelector("#sidePending").textContent = active.reduce((s, p) => s + remaining(p), 0);
+      document.querySelector("#sideSigned").textContent = patients.reduce((s, p) => s + p.sessions.length, 0) + consents.length;
+      document.querySelector("#sideConsents").textContent = consents.length;
+      const isBonos = section === "bonos";
+      mainTitle.textContent = isBonos ? "Bonos de fisioterapia" : "Consentimiento informado";
+      mainSubtitle.textContent = isBonos
+        ? "Lista alfabética, firma grande y registros exportables."
+        : "Formularios firmados con DNI, fecha y vista previa de la firma.";
+      bonusControls.hidden = !isBonos;
+      consentControls.hidden = isBonos;
+      newBonusButton.hidden = !isBonos;
+      newConsentButton.hidden = isBonos;
+      if (!isBonos) {
+        renderConsents();
+        return;
+      }
+      if (detail) {
+        renderDetail();
+        return;
+      }
+      const query = document.querySelector("#search").value.trim().toLowerCase();
+      const visible = patients.filter(p => {
+        const match = p.name.toLowerCase().includes(query);
+        if (filter === "done") return match && p.completed;
+        if (filter === "low") return match && !p.completed && remaining(p) <= 2;
+        return match && !p.completed;
+      });
+      const rows = filter === "done" ? completedGroups(visible) : visible;
+      list.innerHTML = rows.length ? rows.map(card).join("") : `<div class="empty-state">No hay bonos para este filtro.</div>`;
+    }
+
+    function renderConsents() {
+      const query = document.querySelector("#consentSearch").value.trim().toLowerCase();
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const visible = consents.filter(consent => {
+        const haystack = `${consent.firstName} ${consent.lastName} ${consent.dni}`.toLowerCase();
+        const matches = haystack.includes(query);
+        if (consentFilter === "recent") return matches && new Date(consent.iso).getTime() >= cutoff;
+        return matches;
+      });
+      list.innerHTML = visible.length
+        ? visible.map(consentCard).join("")
+        : `<div class="empty-state">No hay consentimientos para este filtro.</div>`;
+    }
+
+    function consentCard(consent) {
+      const open = consentDetailId === consent.id;
+      const name = consentFullName(consent);
+      return `
+        <article class="patient consent-card">
+          <div class="patient-head" onclick="openConsentDetail('${consent.id}')">
+            <div>
+              <div class="name">${escapeHtml(name)}</div>
+              <div class="sub">DNI ${escapeHtml(consent.dni)} · ${escapeHtml(consent.date)}</div>
+            </div>
+            <div class="badge">Firmado</div>
+          </div>
+          ${open ? consentExpanded(consent) : ""}
+        </article>
+      `;
+    }
+
+    function consentExpanded(consent) {
+      return `
+        <div class="expanded">
+          <div class="consent-meta">
+            <div><strong>Nombre:</strong> ${escapeHtml(consentFullName(consent))}</div>
+            <div><strong>DNI:</strong> ${escapeHtml(consent.dni)}</div>
+            <div><strong>Fecha:</strong> ${escapeHtml(consent.date)}</div>
+          </div>
+          <details class="config-box">
+            <summary>Texto firmado</summary>
+            <p class="muted">${formatMultiline(consent.documentText)}</p>
+          </details>
+          <div class="history-item">
+            <img class="signature-preview" src="${consent.signature}" onclick="showConsentSignature('${consent.id}')" alt="Firma de ${escapeHtml(consentFullName(consent))}">
+            <div>
+              <div class="name" style="font-size:18px">Consentimiento firmado</div>
+              <div class="muted">Versión ${escapeHtml(consent.textVersion)}</div>
+            </div>
+          </div>
+          <div class="actions" style="margin-top:12px">
+            <button class="secondary" onclick="showConsentSignature('${consent.id}')">Ver firma</button>
+            <button class="danger" onclick="deleteConsent('${consent.id}')">Borrar consentimiento</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function completedGroups(items) {
+      const map = new Map();
+      for (const bono of items) {
+        const key = bono.name.trim().toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { id: `completed-${key}`, group: true, name: bono.name, bonos: [] });
+        }
+        map.get(key).bonos.push(bono);
+      }
+      return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+    }
+
+    function card(p) {
+      const open = expandedId === p.id;
+      const state = p.group ? "done" : status(p);
+      const sessions = p.group ? p.bonos.reduce((sum, bono) => sum + bono.sessions.length, 0) : p.sessions.length;
+      const total = p.group ? p.bonos.length : p.total;
+      return `
+        <article class="patient">
+          <div class="patient-head" onclick="${p.group ? `openCompleted('${escapeJs(p.name)}')` : `openPatient('${p.id}')`}">
+            <div>
+              <div class="name">${escapeHtml(p.name)}</div>
+              <div class="sub">${p.group ? `${total} bonos completados · ${sessions} firmas` : `Bono de ${p.total} sesiones · ${statusText(p)}`}</div>
+            </div>
+            <div class="badge ${state === "warn" ? "warn" : state === "done" ? "done" : ""}">${p.group ? total + " bonos" : remaining(p) + " quedan"}</div>
+          </div>
+          ${open ? (p.group ? expandedGroup(p) : expanded(p)) : ""}
+        </article>
+      `;
+    }
+
+    function renderDetail() {
+      if (detail.type === "patient") {
+        const p = patients.find(item => item.id === detail.id);
+        if (!p) {
+          closeDetail();
+          return;
+        }
+        list.innerHTML = patientDetail(p);
+        return;
+      }
+      const group = completedGroups(patients.filter(p => p.completed && p.name === detail.name))[0];
+      if (!group) {
+        closeDetail();
+        return;
+      }
+      list.innerHTML = completedDetail(group);
+    }
+
+    function patientDetail(p) {
+      const state = status(p);
+      return `
+        <article class="patient patient-detail">
+          <div class="detail-top">
+            <div>
+              <button class="secondary" onclick="closeDetail()">Volver</button>
+              <div class="name" style="font-size:30px;margin-top:18px">${escapeHtml(p.name)}</div>
+              <div class="sub">Bono de ${p.total} sesiones · ${statusText(p)}</div>
+            </div>
+            <div class="badge ${state === "warn" ? "warn" : state === "done" ? "done" : ""}">${remaining(p)} quedan</div>
+          </div>
+          ${expanded(p)}
+        </article>
+      `;
+    }
+
+    function completedDetail(group) {
+      return `
+        <article class="patient patient-detail">
+          <div class="detail-top">
+            <div>
+              <button class="secondary" onclick="closeDetail()">Volver</button>
+              <div class="name" style="font-size:30px;margin-top:18px">${escapeHtml(group.name)}</div>
+              <div class="sub">${group.bonos.length} bonos completados agrupados</div>
+            </div>
+            <div class="badge done">${group.bonos.length} bonos</div>
+          </div>
+          ${expandedGroup(group)}
+        </article>
+      `;
+    }
+
+    function expandedGroup(group) {
+      return `
+        <div class="expanded">
+          <div class="actions">
+            <button class="secondary" onclick="openRenewFromName('${escapeJs(group.name)}')">Renovar bono</button>
+            <button class="danger" onclick="deletePatient('${escapeJs(group.name)}')">Borrar paciente</button>
+          </div>
+          ${group.bonos.map((bono, index) => `
+            <section class="completed-bono">
+              <div class="completed-bono-title">Bono ${index + 1}: ${bono.total} sesiones · ${bono.completedAt || "sin fecha de cierre"}</div>
+              <div class="actions">
+                <button class="secondary" onclick="exportPdf('${bono.id}')">Exportar PDF</button>
+              </div>
+              <div class="history">
+                ${bono.sessions.length ? bono.sessions.map((s, i) => `
+                  <div class="history-item">
+                    <img class="signature-preview" src="${s.signature}" onclick="showBig('${bono.id}', ${i})" alt="Firma ${i + 1}">
+                    <div><div class="name" style="font-size:18px">Sesión ${i + 1}</div><div class="muted">${s.date}</div></div>
+                  </div>
+                `).join("") : `<div class="muted">Este bono no tiene sesiones firmadas.</div>`}
+              </div>
+            </section>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function expanded(p) {
+      return `
+        <div class="expanded">
+          <div class="bar"><span style="width:${progress(p)}%"></span></div>
+          <div class="actions">
+            ${p.completed ? "" : `<button ${remaining(p) === 0 ? "disabled" : ""} onclick="openSignature('${p.id}')">${remaining(p) === 0 ? "Bono agotado" : "Firmar sesión"}</button>`}
+            ${p.completed ? "" : `<button class="secondary" onclick="openRenew('${p.id}')">Renovar bono</button>`}
+            ${p.completed ? "" : `<button class="danger" onclick="markCompleted('${p.id}')">Pasar a completados</button>`}
+            <button class="secondary" onclick="exportPdf('${p.id}')">Exportar PDF</button>
+            <button class="danger" onclick="deletePatient('${escapeJs(p.name)}')">Borrar paciente</button>
+          </div>
+          <div class="history-title">Historial de firmas</div>
+          <div class="history">
+            ${p.sessions.length ? p.sessions.map((s, i) => `
+              <div class="history-item">
+                <img class="signature-preview" src="${s.signature}" onclick="showBig('${p.id}', ${i})" alt="Firma ${i + 1}">
+                <div><div class="name" style="font-size:18px">Sesión ${i + 1}</div><div class="muted">${s.date}</div></div>
+              </div>
+            `).join("") : `<div class="muted">Aún no hay sesiones firmadas.</div>`}
+          </div>
+        </div>
+      `;
+    }
+
+    function setFilter(next) {
+      filter = next;
+      detail = null;
+      document.querySelectorAll(".filter").forEach(btn => btn.classList.toggle("active", btn.dataset.filter === next));
+      render();
+    }
+    function setSection(next) {
+      section = next;
+      detail = null;
+      expandedId = null;
+      consentDetailId = null;
+      render();
+    }
+    function setConsentFilter(next) {
+      consentFilter = next;
+      consentDetailId = null;
+      render();
+    }
+    function toggle(id) { expandedId = expandedId === id ? null : id; render(); }
+    function openPatient(id) { detail = { type: "patient", id }; expandedId = id; render(); }
+    function openCompleted(name) { detail = { type: "completed", name }; expandedId = `completed-${name.trim().toLowerCase()}`; render(); }
+    function openConsentDetail(id) { consentDetailId = consentDetailId === id ? null : id; render(); }
+    function closeDetail() { detail = null; expandedId = null; render(); }
+    function openCreate() {
+      document.querySelector("#patientName").value = "";
+      selectNewTotal(10);
+      newDialog.showModal();
+    }
+    function selectNewTotal(total) {
+      newTotal = total;
+      document.querySelector("#newFive").classList.toggle("selected", total === 5);
+      document.querySelector("#newTen").classList.toggle("selected", total === 10);
+    }
+    function createPatient() {
+      const name = document.querySelector("#patientName").value.trim();
+      if (!name) return;
+      const patient = { id: crypto.randomUUID(), name, total: newTotal, completed: false, sessions: [] };
+      patients.push(patient);
+      expandedId = patient.id;
+      detail = { type: "patient", id: patient.id };
+      filter = "all";
+      save();
+      newDialog.close();
+      render();
+    }
+    function openRenew(id) {
+      current = patients.find(p => p.id === id);
+      document.querySelector("#renewText").textContent = `El bono actual de ${current.name} pasará a completados y se creará un bono nuevo limpio.`;
+      renewDialog.showModal();
+    }
+    function openRenewFromName(name) {
+      current = { name, completed: true };
+      document.querySelector("#renewText").textContent = `Se creará un bono nuevo limpio para ${name}.`;
+      renewDialog.showModal();
+    }
+    function renew(extra) {
+      if (!current.completed) {
+        current.completed = true;
+        current.completedAt = today();
+      }
+      const next = { id: crypto.randomUUID(), name: current.name, total: extra, completed: false, sessions: [] };
+      patients.push(next);
+      expandedId = next.id;
+      detail = { type: "patient", id: next.id };
+      filter = "all";
+      save();
+      renewDialog.close();
+      render();
+    }
+    function markCompleted(id) {
+      const p = patients.find(x => x.id === id);
+      if (!p) return;
+      if (!confirm(`¿Pasar el bono de ${p.name} a completados? Desaparecerá de bonos activos.`)) return;
+      p.completed = true;
+      p.completedAt = today();
+      expandedId = null;
+      detail = null;
+      save();
+      render();
+    }
+    function deletePatient(name) {
+      const related = patients.filter(p => p.name === name);
+      if (!related.length) return;
+      const signed = related.reduce((sum, p) => sum + p.sessions.length, 0);
+      const message = `¿Borrar definitivamente a ${name} y sus ${related.length} bono(s)? También se eliminarán ${signed} firma(s).`;
+      if (!confirm(message)) return;
+      patients = patients.filter(p => p.name !== name);
+      expandedId = null;
+      detail = null;
+      save();
+      render();
+    }
+    function openSignature(id) {
+      current = patients.find(p => p.id === id);
+      signed = false;
+      clearCanvas();
+      document.querySelector("#signRemaining").textContent = `${current.name}: ${remaining(current)} sesiones restantes antes de firmar.`;
+      document.body.classList.add("signing");
+      signDialog.showModal();
+    }
+    function confirmSignature() {
+      if (!signed || !current) return;
+      if (!confirm(`¿Guardar una sesión firmada para ${current.name}?`)) return;
+      current.sessions.push({
+        date: new Date().toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        signature: canvas.toDataURL("image/png")
+      });
+      expandedId = current.id;
+      save();
+      signDialog.close();
+      render();
+    }
+    function openConsentDialog() {
+      document.querySelector("#consentFirstName").value = "";
+      document.querySelector("#consentLastName").value = "";
+      document.querySelector("#consentDni").value = "";
+      consentSigned = false;
+      clearConsentCanvas();
+      document.body.classList.add("consent-signing");
+      consentDialog.showModal();
+    }
+    function saveConsent() {
+      const firstName = document.querySelector("#consentFirstName").value.trim();
+      const lastName = document.querySelector("#consentLastName").value.trim();
+      const dni = document.querySelector("#consentDni").value.trim().toUpperCase();
+      if (!firstName || !lastName || !dni) {
+        alert("Completa nombre, apellidos y DNI.");
+        return;
+      }
+      if (!consentSigned) {
+        alert("Falta la firma del paciente.");
+        return;
+      }
+      if (!confirm(`¿Guardar consentimiento informado de ${firstName} ${lastName}?`)) return;
+      const now = new Date();
+      const consent = normalizeConsent({
+        id: crypto.randomUUID(),
+        firstName,
+        lastName,
+        dni,
+        date: now.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        iso: now.toISOString(),
+        signature: consentCanvas.toDataURL("image/png"),
+        documentText: consentDocumentText(),
+        textVersion: "fisiofit-consent-v1"
+      });
+      consents.push(consent);
+      section = "consents";
+      consentDetailId = consent.id;
+      save();
+      consentDialog.close();
+      render();
+    }
+    function deleteConsent(id) {
+      const consent = consents.find(item => item.id === id);
+      if (!consent) return;
+      if (!confirm(`¿Borrar el consentimiento de ${consentFullName(consent)}?`)) return;
+      consents = consents.filter(item => item.id !== id);
+      consentDetailId = null;
+      save();
+      render();
+    }
+    function exportPdf(id) {
+      const p = patients.find(x => x.id === id);
+      alert(`En Android se abrirá el selector para guardar un PDF del bono de ${p.name}, con fechas y firmas.`);
+    }
+    function backup() {
+      const blob = new Blob([JSON.stringify({ patients, consents }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "fisiofit_copia.json";
+      a.click();
+    }
+
+    function openCloudDialog() {
+      const config = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      document.querySelector("#supabaseUrl").value = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
+      document.querySelector("#supabaseKey").value = config.key || DEFAULT_SUPABASE_KEY;
+      document.querySelector("#supabaseEmail").value = config.email || "";
+      document.querySelector("#supabasePassword").value = "";
+      updateCloudStatus();
+      cloudDialog.showModal();
+    }
+
+    async function loginFromScreen() {
+      const url = cleanSupabaseUrl(document.querySelector("#loginSupabaseUrl").value.trim() || DEFAULT_SUPABASE_URL);
+      const key = document.querySelector("#loginSupabaseKey").value.trim() || DEFAULT_SUPABASE_KEY;
+      const email = document.querySelector("#loginEmail").value.trim();
+      const password = document.querySelector("#loginPassword").value;
+      const remember = document.querySelector("#rememberCredentials").checked;
+      await loginCloud({ url, key, email, password, remember, source: "login" });
+    }
+
+    async function connectCloud() {
+      const url = cleanSupabaseUrl(document.querySelector("#supabaseUrl").value.trim() || DEFAULT_SUPABASE_URL);
+      const key = document.querySelector("#supabaseKey").value.trim() || DEFAULT_SUPABASE_KEY;
+      const email = document.querySelector("#supabaseEmail").value.trim();
+      const password = document.querySelector("#supabasePassword").value;
+      await loginCloud({ url, key, email, password, remember: false, source: "dialog" });
+    }
+
+    async function testSupabaseFromLogin() {
+      const url = cleanSupabaseUrl(document.querySelector("#loginSupabaseUrl").value.trim() || DEFAULT_SUPABASE_URL);
+      const key = document.querySelector("#loginSupabaseKey").value.trim() || DEFAULT_SUPABASE_KEY;
+      if (!url || !key) {
+        setLoginOrCloudStatus("login", "Falta la URL o la clave pública de Supabase.");
+        return;
+      }
+      try {
+        await testSupabaseConnection(url, key);
+        localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url, key, email: document.querySelector("#loginEmail").value.trim() }));
+        setLoginOrCloudStatus("login", "Conexión con Supabase correcta.");
+      } catch (error) {
+        setLoginOrCloudStatus("login", friendlySupabaseError(error));
+      }
+    }
+
+    async function loginCloud({ url, key, email, password, remember, source }) {
+      const cleanUrl = cleanSupabaseUrl(url || DEFAULT_SUPABASE_URL);
+      const cleanKey = key || DEFAULT_SUPABASE_KEY;
+      if (!email || !password) {
+        setLoginOrCloudStatus(source, "Introduce email y contraseña.");
+        return;
+      }
+      if (!cleanUrl || !cleanKey) {
+        setLoginOrCloudStatus(source, "Falta la configuración de Supabase.");
+        return;
+      }
+      try {
+        await createCloudClient(cleanUrl, cleanKey);
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url: cleanUrl, key: cleanKey, email }));
+        if (remember) {
+          localStorage.setItem(SAVED_LOGIN_KEY, JSON.stringify({ remember: true, email, password }));
+        } else {
+          localStorage.removeItem(SAVED_LOGIN_KEY);
+        }
+        cloudOnline = true;
+        await loadCloudState(true);
+        subscribeCloudChanges();
+        updateCloudStatus();
+        hideLogin();
+        if (source === "dialog") {
+          cloudDialog.close();
+        }
+        render();
+      } catch (error) {
+        cloudOnline = false;
+        setLoginOrCloudStatus(source, friendlySupabaseError(error));
+      }
+    }
+
+    async function testSupabaseConnection(url, key) {
+      const response = await fetch(`${url}/auth/v1/health`, {
+        headers: { apikey: key },
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        throw new Error(`Supabase respondió ${response.status}`);
+      }
+      return true;
+    }
+
+    function friendlySupabaseError(error) {
+      const message = String(error?.message || error || "");
+      if (message.includes("Failed to fetch") || message.includes("NetworkError") || message.includes("Load failed")) {
+        return "No se puede conectar con Supabase. Revisa que la URL del proyecto sea exacta y que el proyecto no esté pausado.";
+      }
+      if (message.includes("Invalid login credentials")) {
+        return "Email o contraseña incorrectos.";
+      }
+      if (message.includes("Supabase respondió 401") || message.includes("Supabase respondió 403")) {
+        return "La clave pública de Supabase no corresponde a este proyecto.";
+      }
+      return "Error: " + message;
+    }
+
+    function cleanSupabaseUrl(url) {
+      let value = url.trim();
+      if (!value) return "";
+      value = value.replace(/\/rest\/v1\/?$/i, "").replace(/\/+$/, "");
+      if (!/^https?:\/\//i.test(value)) {
+        value = value.replace(/^https?:\/\//i, "").replace(/\.supabase\.co$/i, "");
+        value = `https://${value}.supabase.co`;
+      }
+      return value;
+    }
+
+    function setLoginOrCloudStatus(source, message) {
+      if (source === "login") {
+        document.querySelector("#loginStatus").textContent = message;
+      } else {
+        setCloudStatus(message);
+      }
+    }
+
+    async function initCloudFromStorage() {
+      const config = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      hydrateLoginScreen();
+      const url = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
+      const key = config.key || DEFAULT_SUPABASE_KEY;
+      try {
+        await createCloudClient(url, key);
+        const { data } = await supabaseClient.auth.getSession();
+        cloudOnline = Boolean(data.session);
+        if (cloudOnline) {
+          await loadCloudState(false);
+          subscribeCloudChanges();
+          hideLogin();
+        } else {
+          showLogin("Introduce tu email y contraseña para entrar.");
+        }
+        updateCloudStatus();
+      } catch (error) {
+        cloudOnline = false;
+        showLogin(friendlySupabaseError(error));
+      }
+    }
+
+    async function createCloudClient(url, key) {
+      const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
+      supabaseClient = createClient(url, key, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true
+        }
+      });
+    }
+
+    async function loadCloudState(askToUploadLocal) {
+      const { data, error } = await supabaseClient
+        .from("fisiofit_app_state")
+        .select("data, updated_at")
+        .eq("id", "main")
+        .maybeSingle();
+      if (error) throw error;
+
+      const cloudPatients = Array.isArray(data?.data?.patients) ? data.data.patients : [];
+      const cloudConsents = Array.isArray(data?.data?.consents) ? data.data.consents : [];
+      const cloudHasData = cloudPatients.length > 0 || cloudConsents.length > 0;
+      if (cloudHasData) {
+        const localPatients = getStoredPatients();
+        const localConsents = getStoredConsents();
+        const localHasData = localPatients.length > 0 || localConsents.length > 0;
+        const cloudSnapshot = JSON.stringify({ patients: cloudPatients, consents: cloudConsents });
+        const localSnapshot = JSON.stringify({ patients: localPatients, consents: localConsents });
+        if (askToUploadLocal && localHasData && localSnapshot !== cloudSnapshot) {
+          const useCloud = confirm("Supabase ya tiene datos, pero esta tablet también tiene una copia local. Aceptar: usar Supabase. Cancelar: conservar los datos de esta tablet y subirlos a Supabase.");
+          if (!useCloud) {
+            patients = localPatients.map(p => ({ ...p, completed: Boolean(p.completed) }));
+            consents = localConsents.map(normalizeConsent);
+            await saveCloudNow();
+            return;
+          }
+        }
+        patients = cloudPatients.map(p => ({ ...p, completed: Boolean(p.completed) }));
+        consents = cloudConsents.map(normalizeConsent);
+        localStorage.setItem("fisio_preview", JSON.stringify(patients));
+        localStorage.setItem("fisio_consents", JSON.stringify(consents));
+        detail = null;
+        expandedId = null;
+        consentDetailId = null;
+        return;
+      }
+
+      if (askToUploadLocal && (patients.length || consents.length) && confirm("Supabase está vacío. ¿Quieres subir los datos locales actuales?")) {
+        await saveCloudNow();
+      }
+    }
+
+    function queueCloudSave() {
+      if (!cloudOnline || !supabaseClient) return;
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = setTimeout(() => saveCloudNow(), 350);
+    }
+
+    async function saveCloudNow() {
+      if (!cloudOnline || !supabaseClient) return;
+      cloudSaving = true;
+      try {
+        const { data: userData } = await supabaseClient.auth.getUser();
+        const payload = {
+          id: "main",
+          data: { patients, consents },
+          updated_at: new Date().toISOString(),
+          updated_by: userData.user?.id || null
+        };
+        const { error } = await supabaseClient
+          .from("fisiofit_app_state")
+          .upsert(payload, { onConflict: "id" });
+        if (error) throw error;
+        updateCloudStatus("Sincronizado con Supabase.");
+      } catch (error) {
+        setCloudStatus("No se pudo sincronizar: " + error.message);
+      } finally {
+        setTimeout(() => { cloudSaving = false; }, 500);
+      }
+    }
+
+    function subscribeCloudChanges() {
+      if (!supabaseClient || cloudChannel) return;
+      cloudChannel = supabaseClient
+        .channel("fisiofit_app_state_changes")
+        .on("postgres_changes", { event: "*", schema: "public", table: "fisiofit_app_state", filter: "id=eq.main" }, payload => {
+          if (cloudSaving || !payload.new?.data) return;
+          const nextPatients = Array.isArray(payload.new.data.patients) ? payload.new.data.patients : [];
+          const nextConsents = Array.isArray(payload.new.data.consents) ? payload.new.data.consents : [];
+          patients = nextPatients.map(p => ({ ...p, completed: Boolean(p.completed) }));
+          consents = nextConsents.map(normalizeConsent);
+          localStorage.setItem("fisio_preview", JSON.stringify(patients));
+          localStorage.setItem("fisio_consents", JSON.stringify(consents));
+          detail = null;
+          expandedId = null;
+          consentDetailId = null;
+          render();
+          updateCloudStatus("Actualizado desde Supabase.");
+        })
+        .subscribe();
+    }
+
+    async function signOutCloud() {
+      if (supabaseClient) {
+        if (cloudChannel) {
+          await supabaseClient.removeChannel(cloudChannel);
+        }
+        await supabaseClient.auth.signOut();
+      }
+      cloudOnline = false;
+      cloudChannel = null;
+      updateCloudStatus("Desconectado.");
+      showLogin("Sesión cerrada.");
+    }
+
+    function updateCloudStatus(message) {
+      const text = message || (cloudOnline ? "Conectado a Supabase." : "Sin conectar.");
+      document.querySelector("#cloudStatus").textContent = text;
+      document.querySelector("#cloudButton").textContent = cloudOnline ? "Supabase ON" : "Supabase";
+    }
+
+    function setCloudStatus(message) {
+      document.querySelector("#cloudStatus").textContent = message;
+    }
+
+    function restore() {
+      document.querySelector("#restoreFile").click();
+    }
+    function showBig(id, index) {
+      const p = patients.find(x => x.id === id);
+      document.querySelector("#bigSignature").src = p.sessions[index].signature;
+      previewDialog.showModal();
+    }
+    function showConsentSignature(id) {
+      const consent = consents.find(item => item.id === id);
+      if (!consent) return;
+      document.querySelector("#bigSignature").src = consent.signature;
+      previewDialog.showModal();
+    }
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#aeb9c6";
+      ctx.font = "42px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Firma aquí", canvas.width / 2, canvas.height / 2);
+    }
+    function clearSignature() { signed = false; clearCanvas(); }
+    function clearConsentCanvas() {
+      consentCtx.clearRect(0, 0, consentCanvas.width, consentCanvas.height);
+      consentCtx.fillStyle = "#fff";
+      consentCtx.fillRect(0, 0, consentCanvas.width, consentCanvas.height);
+      consentCtx.fillStyle = "#aeb9c6";
+      consentCtx.font = "42px system-ui";
+      consentCtx.textAlign = "center";
+      consentCtx.fillText("Firma aquí", consentCanvas.width / 2, consentCanvas.height / 2);
+    }
+    function clearConsentSignature() { consentSigned = false; clearConsentCanvas(); }
+    function point(event) {
+      const rect = canvas.getBoundingClientRect();
+      const touch = event.touches ? event.touches[0] : event;
+      return { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) };
+    }
+    function consentPoint(event) {
+      const rect = consentCanvas.getBoundingClientRect();
+      const touch = event.touches ? event.touches[0] : event;
+      return { x: (touch.clientX - rect.left) * (consentCanvas.width / rect.width), y: (touch.clientY - rect.top) * (consentCanvas.height / rect.height) };
+    }
+    function startDraw(event) {
+      event.preventDefault();
+      if (!signed) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      signed = true;
+      drawing = true;
+      const p = point(event);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    }
+    function moveDraw(event) {
+      if (!drawing) return;
+      event.preventDefault();
+      const p = point(event);
+      ctx.lineWidth = 7;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#172033";
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    }
+    function endDraw() { drawing = false; }
+    function startConsentDraw(event) {
+      event.preventDefault();
+      if (!consentSigned) {
+        consentCtx.clearRect(0, 0, consentCanvas.width, consentCanvas.height);
+        consentCtx.fillStyle = "#fff";
+        consentCtx.fillRect(0, 0, consentCanvas.width, consentCanvas.height);
+      }
+      consentSigned = true;
+      consentDrawing = true;
+      const p = consentPoint(event);
+      consentCtx.beginPath();
+      consentCtx.moveTo(p.x, p.y);
+    }
+    function moveConsentDraw(event) {
+      if (!consentDrawing) return;
+      event.preventDefault();
+      const p = consentPoint(event);
+      consentCtx.lineWidth = 7;
+      consentCtx.lineCap = "round";
+      consentCtx.lineJoin = "round";
+      consentCtx.strokeStyle = "#172033";
+      consentCtx.lineTo(p.x, p.y);
+      consentCtx.stroke();
+    }
+    function endConsentDraw() { consentDrawing = false; }
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+    }
+    function escapeJs(value) {
+      return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+    function formatMultiline(value) {
+      return escapeHtml(value).replace(/\n/g, "<br>");
+    }
+    function consentFullName(consent) {
+      return `${consent.firstName || ""} ${consent.lastName || ""}`.trim() || "Sin nombre";
+    }
+    function today() {
+      return new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+    function demoSignature() {
+      const mini = document.createElement("canvas");
+      mini.width = 520;
+      mini.height = 260;
+      const c = mini.getContext("2d");
+      c.fillStyle = "#fff";
+      c.fillRect(0, 0, mini.width, mini.height);
+      c.strokeStyle = "#172033";
+      c.lineWidth = 10;
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(60, 160);
+      c.bezierCurveTo(140, 32, 180, 220, 250, 112);
+      c.bezierCurveTo(310, 34, 350, 204, 460, 96);
+      c.stroke();
+      return mini.toDataURL("image/png");
+    }
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("mousemove", moveDraw);
+    window.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("touchstart", startDraw, { passive: false });
+    canvas.addEventListener("touchmove", moveDraw, { passive: false });
+    window.addEventListener("touchend", endDraw);
+    consentCanvas.addEventListener("mousedown", startConsentDraw);
+    consentCanvas.addEventListener("mousemove", moveConsentDraw);
+    window.addEventListener("mouseup", endConsentDraw);
+    consentCanvas.addEventListener("touchstart", startConsentDraw, { passive: false });
+    consentCanvas.addEventListener("touchmove", moveConsentDraw, { passive: false });
+    window.addEventListener("touchend", endConsentDraw);
+    signDialog.addEventListener("close", () => document.body.classList.remove("signing"));
+    consentDialog.addEventListener("close", () => document.body.classList.remove("consent-signing"));
+    document.querySelector("#restoreFile").addEventListener("change", async event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const data = JSON.parse(await file.text());
+      if (Array.isArray(data.patients) || Array.isArray(data.consents)) {
+        patients = Array.isArray(data.patients) ? data.patients.map(p => ({ ...p, completed: Boolean(p.completed) })) : [];
+        consents = Array.isArray(data.consents) ? data.consents.map(normalizeConsent) : [];
+        expandedId = null;
+        detail = null;
+        consentDetailId = null;
+        save();
+        render();
+      }
+      event.target.value = "";
+    });
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js"));
+    }
+    initCloudFromStorage().finally(render);
+  </script>
+</body>
+</html>
