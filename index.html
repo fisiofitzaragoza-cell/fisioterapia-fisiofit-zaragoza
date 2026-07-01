@@ -115,6 +115,50 @@
       align-items: end;
       margin-bottom: 18px;
     }
+    .home-screen {
+      min-height: calc(100vh - 56px);
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 28px;
+      padding: 28px 0;
+    }
+    .home-logo {
+      width: min(260px, 48vw);
+      border-radius: 18px;
+      background: white;
+      padding: 12px;
+      box-shadow: 0 18px 55px rgba(23, 32, 51, .12);
+    }
+    .home-title {
+      text-align: center;
+      display: grid;
+      gap: 8px;
+    }
+    .home-title h1 {
+      font-size: 34px;
+    }
+    .home-actions {
+      width: min(620px, 100%);
+      display: grid;
+      gap: 14px;
+    }
+    .home-tile {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      min-height: 78px;
+      justify-content: flex-start;
+      text-align: left;
+      border-radius: 12px;
+      border: 1px solid rgba(216,189,104,.55);
+      background: #c9baa7;
+      color: #201a10;
+      padding: 0 26px;
+      box-shadow: 0 12px 30px rgba(32, 26, 16, .08);
+      font-size: 18px;
+      letter-spacing: 0;
+    }
     h1 {
       margin: 0;
       font-size: 34px;
@@ -355,7 +399,7 @@
     }
     dialog::backdrop { background: rgba(19, 35, 51, .42); }
     #signDialog::backdrop { background: var(--bg); }
-    #consentDialog::backdrop { background: var(--bg); }
+    #consentSignDialog::backdrop { background: var(--bg); }
     dialog.wide-dialog { width: min(980px, calc(100vw - 28px)); }
     body.signing .app,
     body.consent-signing .app { visibility: hidden; }
@@ -499,7 +543,8 @@
         <span>Fisioterapia FisioFit Zaragoza<small>Bonos y consentimientos</small></span>
       </div>
       <nav class="module-nav" aria-label="Secciones">
-        <button class="nav-item active" data-section="bonos" onclick="setSection('bonos')">Bonos fisioterapia</button>
+        <button class="nav-item active" data-section="home" onclick="setSection('home')">Inicio</button>
+        <button class="nav-item" data-section="bonos" onclick="setSection('bonos')">Bonos fisioterapia</button>
         <button class="nav-item" data-section="consents" onclick="setSection('consents')">Consentimiento informado</button>
       </nav>
       <div class="side-card"><strong id="sidePatients">0</strong><span>bonos activos</span></div>
@@ -508,7 +553,18 @@
       <div class="side-card"><strong id="sideConsents">0</strong><span>consentimientos</span></div>
     </aside>
     <main>
-      <section class="toolbar">
+      <section class="home-screen" id="homeScreen">
+        <img class="home-logo" src="icons/logo-definitivo.png" alt="FisioFit Zaragoza">
+        <div class="home-title">
+          <h1>Fisioterapia FisioFit Zaragoza</h1>
+          <div class="muted">Bonos, consentimientos y firmas en una sola app.</div>
+        </div>
+        <div class="home-actions">
+          <button class="home-tile" onclick="setSection('bonos')">Bonos de fisioterapia</button>
+          <button class="home-tile" onclick="setSection('consents')">Consentimiento informado</button>
+        </div>
+      </section>
+      <section class="toolbar" id="toolbar">
         <div>
           <h1 id="mainTitle">Bonos de fisioterapia</h1>
           <div class="muted" id="mainSubtitle">Lista alfabética, firma grande y registros exportables.</div>
@@ -598,11 +654,27 @@
       </label>
     </div>
     <p class="muted">Firma del paciente</p>
-    <canvas class="signature-pad" id="consentSignature" width="1100" height="560"></canvas>
+    <div class="history-item" id="consentSignatureSummary">
+      <div>
+        <div class="name" style="font-size:18px">Firma pendiente</div>
+        <div class="muted">Pulsa firmar para abrir la zona de firma.</div>
+      </div>
+    </div>
     <div class="actions" style="justify-content:flex-end">
-      <button class="secondary" onclick="clearConsentSignature()">Limpiar</button>
+      <button class="secondary" onclick="openConsentSignatureDialog()">Firmar</button>
       <button class="secondary" onclick="consentDialog.close()">Cancelar</button>
       <button onclick="saveConsent()">Guardar consentimiento</button>
+    </div>
+  </dialog>
+
+  <dialog id="consentSignDialog">
+    <h2>Firma del consentimiento</h2>
+    <p class="muted">Firma grande para tablet. Al aceptar volveras al formulario del consentimiento.</p>
+    <canvas class="signature-pad" id="consentSignature" width="1100" height="520"></canvas>
+    <div class="actions" style="justify-content:flex-end">
+      <button class="secondary" onclick="clearConsentSignature()">Limpiar</button>
+      <button class="secondary" onclick="consentSignDialog.close()">Cancelar</button>
+      <button onclick="acceptConsentSignature()">Aceptar firma</button>
     </div>
   </dialog>
 
@@ -633,8 +705,11 @@
     const list = document.querySelector("#list");
     const signDialog = document.querySelector("#signDialog");
     const consentDialog = document.querySelector("#consentDialog");
+    const consentSignDialog = document.querySelector("#consentSignDialog");
     const previewDialog = document.querySelector("#previewDialog");
     const cloudDialog = document.querySelector("#cloudDialog");
+    const homeScreen = document.querySelector("#homeScreen");
+    const toolbar = document.querySelector("#toolbar");
     const canvas = document.querySelector("#signature");
     const ctx = canvas.getContext("2d");
     const consentCanvas = document.querySelector("#consentSignature");
@@ -645,7 +720,7 @@
     const consentControls = document.querySelector("#consentControls");
     const newBonusButton = document.querySelector("#newBonusButton");
     const newConsentButton = document.querySelector("#newConsentButton");
-    let section = "bonos";
+    let section = "home";
     let expandedId = null;
     let detail = null;
     let consentDetailId = null;
@@ -657,6 +732,7 @@
     let signed = false;
     let consentDrawing = false;
     let consentSigned = false;
+    let consentSignatureData = "";
     let supabaseClient = null;
     let cloudOnline = false;
     let cloudSaveTimer = null;
@@ -744,7 +820,12 @@
     }
 
     function getSupabaseConfig() {
-      const config = getSupabaseConfig();
+      let config = {};
+      try {
+        config = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      } catch (error) {
+        config = {};
+      }
       if (!config.url || cleanSupabaseUrl(config.url) === OLD_BAD_SUPABASE_URL) {
         const fixed = { ...config, url: DEFAULT_SUPABASE_URL, key: DEFAULT_SUPABASE_KEY };
         localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(fixed));
@@ -777,7 +858,16 @@
       document.querySelector("#sidePending").textContent = active.reduce((s, p) => s + remaining(p), 0);
       document.querySelector("#sideSigned").textContent = patients.reduce((s, p) => s + p.sessions.length, 0) + consents.length;
       document.querySelector("#sideConsents").textContent = consents.length;
+      const isHome = section === "home";
       const isBonos = section === "bonos";
+      homeScreen.hidden = !isHome;
+      toolbar.hidden = isHome;
+      list.hidden = isHome;
+      if (isHome) {
+        bonusControls.hidden = true;
+        consentControls.hidden = true;
+        return;
+      }
       mainTitle.textContent = isBonos ? "Bonos de fisioterapia" : "Consentimiento informado";
       mainSubtitle.textContent = isBonos
         ? "Lista alfabética, firma grande y registros exportables."
@@ -857,6 +947,7 @@
           </div>
           <div class="actions" style="margin-top:12px">
             <button class="secondary" onclick="showConsentSignature('${consent.id}')">Ver firma</button>
+            <button class="secondary" onclick="exportConsent('${consent.id}')">Exportar PDF</button>
             <button class="danger" onclick="deleteConsent('${consent.id}')">Borrar consentimiento</button>
           </div>
         </div>
@@ -1002,7 +1093,17 @@
       document.querySelectorAll(".filter").forEach(btn => btn.classList.toggle("active", btn.dataset.filter === next));
       render();
     }
+    function clearFilters() {
+      document.querySelector("#search").value = "";
+      document.querySelector("#consentSearch").value = "";
+      filter = "all";
+      consentFilter = "all";
+      detail = null;
+      expandedId = null;
+      consentDetailId = null;
+    }
     function setSection(next) {
+      if (section !== next) clearFilters();
       section = next;
       detail = null;
       expandedId = null;
@@ -1113,9 +1214,32 @@
       document.querySelector("#consentLastName").value = "";
       document.querySelector("#consentDni").value = "";
       consentSigned = false;
+      consentSignatureData = "";
+      clearConsentCanvas();
+      updateConsentSignatureSummary();
+      consentDialog.showModal();
+    }
+    function openConsentSignatureDialog() {
+      consentSigned = false;
       clearConsentCanvas();
       document.body.classList.add("consent-signing");
-      consentDialog.showModal();
+      consentSignDialog.showModal();
+    }
+    function acceptConsentSignature() {
+      if (!consentSigned) {
+        alert("Falta la firma del paciente.");
+        return;
+      }
+      consentSignatureData = consentCanvas.toDataURL("image/png");
+      updateConsentSignatureSummary();
+      consentSignDialog.close();
+    }
+    function updateConsentSignatureSummary() {
+      const summary = document.querySelector("#consentSignatureSummary");
+      if (!summary) return;
+      summary.innerHTML = consentSignatureData
+        ? `<img class="signature-preview" src="${consentSignatureData}" alt="Firma del consentimiento"><div><div class="name" style="font-size:18px">Firma preparada</div><div class="muted">Puedes guardar el consentimiento.</div></div>`
+        : `<div><div class="name" style="font-size:18px">Firma pendiente</div><div class="muted">Pulsa firmar para abrir la zona de firma.</div></div>`;
     }
     function saveConsent() {
       const firstName = document.querySelector("#consentFirstName").value.trim();
@@ -1125,7 +1249,7 @@
         alert("Completa nombre, apellidos y DNI.");
         return;
       }
-      if (!consentSigned) {
+      if (!consentSignatureData) {
         alert("Falta la firma del paciente.");
         return;
       }
@@ -1138,7 +1262,7 @@
         dni,
         date: now.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
         iso: now.toISOString(),
-        signature: consentCanvas.toDataURL("image/png"),
+        signature: consentSignatureData,
         documentText: consentDocumentText(),
         textVersion: "fisiofit-consent-v1"
       });
@@ -1161,6 +1285,44 @@
     function exportPdf(id) {
       const p = patients.find(x => x.id === id);
       alert(`En Android se abrirá el selector para guardar un PDF del bono de ${p.name}, con fechas y firmas.`);
+    }
+    function exportConsent(id) {
+      const consent = consents.find(item => item.id === id);
+      if (!consent) return;
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("El navegador ha bloqueado la ventana de exportacion.");
+        return;
+      }
+      printWindow.document.write(`
+        <!doctype html>
+        <html lang="es">
+        <head>
+          <meta charset="utf-8">
+          <title>Consentimiento ${escapeHtml(consentFullName(consent))}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #201a10; margin: 36px; line-height: 1.5; }
+            h1 { font-size: 26px; margin: 0 0 18px; }
+            .meta { margin: 18px 0; padding: 12px; border: 1px solid #ddd0aa; border-radius: 10px; }
+            .text { white-space: pre-wrap; margin: 18px 0; }
+            img { width: 320px; max-height: 160px; object-fit: contain; border: 1px solid #ddd0aa; border-radius: 10px; padding: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>Consentimiento informado fisioterapia</h1>
+          <div class="meta">
+            <div><strong>Paciente:</strong> ${escapeHtml(consentFullName(consent))}</div>
+            <div><strong>DNI:</strong> ${escapeHtml(consent.dni)}</div>
+            <div><strong>Fecha:</strong> ${escapeHtml(consent.date)}</div>
+          </div>
+          <div class="text">${escapeHtml(consent.documentText)}</div>
+          <p><strong>Firma del paciente</strong></p>
+          <img src="${consent.signature}" alt="Firma">
+          <script>window.onload = () => { window.print(); }<\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
     }
     function backup() {
       const blob = new Blob([JSON.stringify({ patients, consents }, null, 2)], { type: "application/json" });
@@ -1580,7 +1742,7 @@
     consentCanvas.addEventListener("touchmove", moveConsentDraw, { passive: false });
     window.addEventListener("touchend", endConsentDraw);
     signDialog.addEventListener("close", () => document.body.classList.remove("signing"));
-    consentDialog.addEventListener("close", () => document.body.classList.remove("consent-signing"));
+    consentSignDialog.addEventListener("close", () => document.body.classList.remove("consent-signing"));
     document.querySelector("#restoreFile").addEventListener("change", async event => {
       const file = event.target.files[0];
       if (!file) return;
@@ -1599,6 +1761,7 @@
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => navigator.serviceWorker.register("sw.js"));
     }
+    clearFilters();
     initCloudFromStorage().finally(render);
   </script>
 </body>
