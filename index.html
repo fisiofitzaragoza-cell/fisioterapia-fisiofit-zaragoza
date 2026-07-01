@@ -664,6 +664,7 @@
     let cloudChannel = null;
     const DEFAULT_SUPABASE_URL = "https://idwekwrpprimbiplcxzm.supabase.co";
     const DEFAULT_SUPABASE_KEY = "sb_publishable_d67JRiLMAjWYKRAU2OFl-g_eQYOiyNt";
+    const OLD_BAD_SUPABASE_URL = "https://idwekwrprimibiplcxzm.supabase.co";
     const SUPABASE_CONFIG_KEY = "fisio_supabase_config";
     const SAVED_LOGIN_KEY = "fisio_saved_login";
     let patients = getStoredPatients();
@@ -724,7 +725,7 @@
     }
 
     function hydrateLoginScreen() {
-      const config = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      const config = getSupabaseConfig();
       const saved = JSON.parse(localStorage.getItem(SAVED_LOGIN_KEY) || "{}");
       document.querySelector("#loginSupabaseUrl").value = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
       document.querySelector("#loginSupabaseKey").value = config.key || DEFAULT_SUPABASE_KEY;
@@ -740,6 +741,16 @@
       document.querySelector("#localBackupText").textContent = localCount === 1
         ? "Hay 1 registro guardado en este dispositivo. Haz una copia antes de sincronizar."
         : `Hay ${localCount} registros guardados en este dispositivo. Haz una copia antes de sincronizar.`;
+    }
+
+    function getSupabaseConfig() {
+      const config = getSupabaseConfig();
+      if (!config.url || cleanSupabaseUrl(config.url) === OLD_BAD_SUPABASE_URL) {
+        const fixed = { ...config, url: DEFAULT_SUPABASE_URL, key: DEFAULT_SUPABASE_KEY };
+        localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(fixed));
+        return fixed;
+      }
+      return config;
     }
     function save() {
       localStorage.setItem("fisio_preview", JSON.stringify(patients));
@@ -1160,7 +1171,7 @@
     }
 
     function openCloudDialog() {
-      const config = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      const config = getSupabaseConfig();
       document.querySelector("#supabaseUrl").value = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
       document.querySelector("#supabaseKey").value = config.key || DEFAULT_SUPABASE_KEY;
       document.querySelector("#supabaseEmail").value = config.email || "";
@@ -1283,7 +1294,7 @@
     }
 
     async function initCloudFromStorage() {
-      const config = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY) || "{}");
+      const config = getSupabaseConfig();
       hydrateLoginScreen();
       const url = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
       const key = config.key || DEFAULT_SUPABASE_KEY;
