@@ -1064,6 +1064,50 @@
       font-size: 18px;
       color: #201a10;
     }
+    .sync-status {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 14px;
+      border: 1px solid #e4d8ba;
+      background: #fff9e8;
+    }
+    .sync-status span {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #c9bca0;
+      margin-top: 4px;
+    }
+    .sync-status strong {
+      display: block;
+      color: #201a10;
+      font-size: 17px;
+      margin-bottom: 2px;
+    }
+    .sync-status p {
+      margin: 0;
+      color: #6f6653;
+      line-height: 1.35;
+    }
+    .sync-status.connected {
+      border-color: rgba(169,132,0,.42);
+      background: #fff6d8;
+    }
+    .sync-status.connected span {
+      background: #2f9b57;
+      box-shadow: 0 0 0 4px rgba(47,155,87,.14);
+    }
+    .sync-status.error {
+      border-color: #f0c2bc;
+      background: #fff2ef;
+    }
+    .sync-status.error span {
+      background: #b6483d;
+    }
     .settings-section input {
       margin-top: 10px;
     }
@@ -1321,6 +1365,13 @@
     <div class="settings-section">
       <h3>Sincronizacion Supabase</h3>
       <p class="muted">Configuracion avanzada para sincronizar los datos entre dispositivos.</p>
+    <div class="sync-status" id="cloudStatusCard">
+      <span id="cloudStatusDot"></span>
+      <div>
+        <strong id="cloudStatusTitle">Sin conectar</strong>
+        <p id="cloudStatusDetail">Introduce email y contrasena para conectar.</p>
+      </div>
+    </div>
     <input id="supabaseUrl" placeholder="URL Supabase">
     <input id="supabaseKey" placeholder="Clave publica Supabase">
     <input id="supabaseEmail" placeholder="Email de usuario">
@@ -1330,7 +1381,7 @@
     <div class="actions" style="justify-content:flex-end">
       <button class="secondary" onclick="cloudDialog.close()">Cerrar</button>
       <button class="secondary" onclick="signOutCloud()">Desconectar</button>
-      <button onclick="connectCloud()">Conectar</button>
+      <button id="cloudConnectButton" onclick="connectCloud()">Conectar</button>
     </div>
   </dialog>
 
@@ -2050,6 +2101,10 @@
       const key = document.querySelector("#supabaseKey").value.trim() || DEFAULT_SUPABASE_KEY;
       const email = document.querySelector("#supabaseEmail").value.trim();
       const password = document.querySelector("#supabasePassword").value;
+      if (cloudOnline && !password) {
+        updateCloudStatus("Supabase ya esta conectado.");
+        return;
+      }
       await loginCloud({ url, key, email, password, remember: false, source: "dialog" });
     }
 
@@ -2093,11 +2148,9 @@
         cloudOnline = true;
         await loadCloudState(true);
         subscribeCloudChanges();
+        document.querySelector("#supabasePassword").value = "";
         updateCloudStatus();
         hideLogin();
-        if (source === "dialog") {
-          cloudDialog.close();
-        }
         render();
       } catch (error) {
         cloudOnline = false;
@@ -2291,10 +2344,33 @@
       const text = message || (cloudOnline ? "Conectado a Supabase." : "Sin conectar.");
       document.querySelector("#cloudStatus").textContent = text;
       document.querySelector("#cloudButton").textContent = "Ajustes";
+      const statusCard = document.querySelector("#cloudStatusCard");
+      const statusTitle = document.querySelector("#cloudStatusTitle");
+      const statusDetail = document.querySelector("#cloudStatusDetail");
+      const connectButton = document.querySelector("#cloudConnectButton");
+      const email = document.querySelector("#supabaseEmail")?.value || getSupabaseConfig().email || "";
+      if (statusCard && statusTitle && statusDetail) {
+        statusCard.classList.toggle("connected", cloudOnline);
+        statusCard.classList.remove("error");
+        statusTitle.textContent = cloudOnline ? "Supabase conectado" : "Supabase sin conectar";
+        statusDetail.textContent = cloudOnline
+          ? `Sincronizando datos${email ? ` como ${email}` : ""}.`
+          : "Introduce email y contrasena para conectar.";
+      }
+      if (connectButton) connectButton.textContent = cloudOnline ? "Reconectar" : "Conectar";
     }
 
     function setCloudStatus(message) {
       document.querySelector("#cloudStatus").textContent = message;
+      const statusCard = document.querySelector("#cloudStatusCard");
+      const statusTitle = document.querySelector("#cloudStatusTitle");
+      const statusDetail = document.querySelector("#cloudStatusDetail");
+      if (statusCard && statusTitle && statusDetail) {
+        statusCard.classList.toggle("connected", cloudOnline);
+        statusCard.classList.toggle("error", !cloudOnline);
+        statusTitle.textContent = cloudOnline ? "Supabase conectado" : "Revisa la conexion";
+        statusDetail.textContent = message;
+      }
     }
 
     function restore() {
