@@ -1019,6 +1019,15 @@
     .home-tile::after {
       color: #a98400;
     }
+    .home-settings {
+      min-width: 180px;
+      margin-top: 4px;
+      box-shadow: none;
+      background: rgba(255,255,255,.72);
+    }
+    .back-button {
+      box-shadow: none;
+    }
     .search,
     .patient,
     dialog,
@@ -1167,6 +1176,7 @@
           <button class="home-tile" onclick="setSection('bonos')">Bonos de fisioterapia</button>
           <button class="home-tile" onclick="setSection('consents')">Consentimiento informado</button>
         </div>
+        <button class="secondary home-settings" id="cloudButton" onclick="openCloudDialog()">Ajustes</button>
       </section>
       <section class="toolbar" id="toolbar">
         <div>
@@ -1174,7 +1184,7 @@
           <div class="muted" id="mainSubtitle">Lista alfabética, firma grande y registros exportables.</div>
         </div>
         <div class="actions">
-          <button class="secondary" id="cloudButton" onclick="openCloudDialog()">Ajustes</button>
+          <button class="secondary back-button" onclick="setSection('home')">Volver al inicio</button>
           <button id="newBonusButton" onclick="openCreate()">Nuevo bono</button>
           <button id="newConsentButton" onclick="openConsentDialog()" hidden>Nuevo consentimiento</button>
         </div>
