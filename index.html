@@ -974,6 +974,7 @@
       box-shadow: 0 10px 22px rgba(169,132,0,.16);
     }
     .home-screen {
+      position: relative;
       min-height: auto;
       align-content: start;
       padding-top: 6px;
@@ -1020,8 +1021,15 @@
       color: #a98400;
     }
     .home-settings {
-      min-width: 180px;
-      margin-top: 4px;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      min-width: 0;
+      min-height: 38px;
+      margin-top: 0;
+      padding: 0 14px;
+      border-radius: 999px;
+      font-size: 14px;
       box-shadow: none;
       background: rgba(255,255,255,.72);
     }
@@ -1907,7 +1915,7 @@
       save();
       render();
     }
-    function exportPdf(id) {
+    function exportPdfLegacy(id) {
       const p = patients.find(x => x.id === id);
       alert(`En Android se abrirá el selector para guardar un PDF del bono de ${p.name}, con fechas y firmas.`);
     }
@@ -1943,6 +1951,67 @@
           <div class="text">${escapeHtml(consent.documentText)}</div>
           <p><strong>Firma del paciente</strong></p>
           <img src="${consent.signature}" alt="Firma">
+          <script>window.onload = () => { window.print(); }<\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+    function exportPdf(id) {
+      const p = patients.find(x => x.id === id);
+      if (!p) return;
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("El navegador ha bloqueado la ventana de exportacion.");
+        return;
+      }
+      const sessionRows = p.sessions.length
+        ? p.sessions.map((session, index) => `
+          <section class="session">
+            <div>
+              <h2>Sesion ${index + 1}</h2>
+              <p>${escapeHtml(session.date)}</p>
+            </div>
+            <img src="${session.signature}" alt="Firma sesion ${index + 1}">
+          </section>
+        `).join("")
+        : `<p class="empty">Este bono no tiene sesiones firmadas.</p>`;
+      printWindow.document.write(`
+        <!doctype html>
+        <html lang="es">
+        <head>
+          <meta charset="utf-8">
+          <title>Bono fisioterapia ${escapeHtml(p.name)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #201a10; margin: 34px; line-height: 1.45; }
+            header { display: flex; justify-content: space-between; gap: 20px; border-bottom: 2px solid #d8bd68; padding-bottom: 18px; margin-bottom: 20px; }
+            h1 { font-size: 28px; margin: 0 0 8px; }
+            h2 { font-size: 17px; margin: 0 0 6px; }
+            p { margin: 0; color: #5f543d; }
+            .badge { display: inline-block; border: 1px solid #d8bd68; border-radius: 999px; padding: 8px 12px; font-weight: 700; color: #8b6d00; }
+            .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
+            .box { border: 1px solid #e4d8ba; border-radius: 12px; padding: 12px; background: #fffdf8; }
+            .session { break-inside: avoid; display: grid; grid-template-columns: 1fr 280px; gap: 18px; align-items: center; border: 1px solid #e4d8ba; border-radius: 12px; padding: 12px; margin: 10px 0; }
+            img { width: 280px; height: 120px; object-fit: contain; border: 1px solid #e4d8ba; border-radius: 10px; background: #fff; padding: 8px; }
+            .empty { border: 1px dashed #d8bd68; border-radius: 12px; padding: 16px; }
+            @media print { body { margin: 22px; } }
+          </style>
+        </head>
+        <body>
+          <header>
+            <div>
+              <h1>Bono de fisioterapia</h1>
+              <p>FisioFit Zaragoza</p>
+            </div>
+            <div class="badge">${escapeHtml(statusText(p))}</div>
+          </header>
+          <div class="meta">
+            <div class="box"><strong>Paciente</strong><br>${escapeHtml(p.name)}</div>
+            <div class="box"><strong>Bono</strong><br>${p.total} sesiones</div>
+            <div class="box"><strong>Pendientes</strong><br>${remaining(p)} sesiones</div>
+          </div>
+          <h2>Historial de firmas</h2>
+          ${sessionRows}
           <script>window.onload = () => { window.print(); }<\/script>
         </body>
         </html>

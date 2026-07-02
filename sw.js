@@ -1,4 +1,4 @@
-const CACHE_NAME = "fisiofit-v23";
+const CACHE_NAME = "fisiofit-v24";
 const ASSETS = [
   "./",
   "./index.html",
