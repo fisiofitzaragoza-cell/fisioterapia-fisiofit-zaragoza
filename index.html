@@ -880,12 +880,18 @@
         padding: 18px;
         border-radius: 18px;
       }
-      .patient-head,
       .detail-top {
         grid-template-columns: 1fr;
       }
+      .patient-head {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+      }
+      .patient-head > div:first-child {
+        min-width: 0;
+      }
       .badge {
-        justify-self: start;
+        justify-self: end;
       }
       .history-item {
         grid-template-columns: 1fr;
