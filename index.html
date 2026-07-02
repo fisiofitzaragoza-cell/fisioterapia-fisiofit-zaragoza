@@ -915,6 +915,194 @@
         padding: 22px;
       }
     }
+
+    /* Corporate corrections */
+    [hidden] { display: none !important; }
+    :root {
+      --bg: #f7f4ec;
+      --surface: #ffffff;
+      --ink: #201a10;
+      --muted: #6f6653;
+      --primary: #a98400;
+      --accent: #d8bd68;
+      --line: #e4d8ba;
+      --warn: #8f6519;
+      --warn-bg: #fff5dc;
+      --done: #8f3f3f;
+      --done-bg: #fff0ed;
+      --ok-bg: #f6edcf;
+      --side: #17140f;
+    }
+    body {
+      background: linear-gradient(180deg, #fbfaf6 0%, #f0ebdf 100%);
+      color: var(--ink);
+    }
+    aside {
+      background: #17140f;
+      border-right-color: rgba(216,189,104,.32);
+    }
+    .module-nav,
+    #supabaseConfigDetails {
+      display: none !important;
+    }
+    .side-card {
+      background: rgba(216,189,104,.1);
+      border-color: rgba(216,189,104,.24);
+    }
+    .side-card span {
+      color: #e3d4a5;
+    }
+    h1,
+    .name {
+      color: #201a10;
+    }
+    .toolbar {
+      border-bottom-color: rgba(169,132,0,.18);
+    }
+    .toolbar .actions {
+      min-width: 0;
+    }
+    button.secondary,
+    .filter {
+      color: #6a5607;
+      border-color: #e4d8ba;
+    }
+    .filter.active {
+      background: #a98400;
+      border-color: #a98400;
+      color: white;
+      box-shadow: 0 10px 22px rgba(169,132,0,.16);
+    }
+    .home-screen {
+      min-height: auto;
+      align-content: start;
+      padding-top: 6px;
+      gap: 16px;
+    }
+    .home-logo {
+      width: min(170px, 30vw);
+      border-radius: 18px;
+      padding: 10px;
+      box-shadow: 0 18px 42px rgba(32,26,16,.11);
+    }
+    .home-title h1 {
+      font-size: clamp(30px, 4.2vw, 46px);
+    }
+    .home-title .muted {
+      font-size: 15px;
+    }
+    .home-actions {
+      width: min(560px, 100%);
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .home-tile {
+      min-height: 66px;
+      border-radius: 16px;
+      padding: 0 22px 0 72px;
+      font-size: 18px;
+      box-shadow: 0 14px 34px rgba(32,26,16,.07);
+      border-color: rgba(169,132,0,.22);
+    }
+    .home-tile::before {
+      left: 22px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #f6edcf;
+      box-shadow: inset 0 0 0 1px rgba(169,132,0,.28);
+    }
+    .home-tile:nth-child(2)::before {
+      background: #fff8e1;
+      box-shadow: inset 0 0 0 1px rgba(216,189,104,.55);
+    }
+    .home-tile::after {
+      color: #a98400;
+    }
+    .search,
+    .patient,
+    dialog,
+    .login-card {
+      border-color: rgba(169,132,0,.18);
+      box-shadow: 0 18px 44px rgba(32,26,16,.08);
+    }
+    input {
+      background: #fffdf8;
+      color: #201a10;
+      border-color: #e4d8ba;
+    }
+    input:focus {
+      border-color: #d8bd68;
+      box-shadow: 0 0 0 4px rgba(216,189,104,.24);
+    }
+    .settings-section {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fffdf8;
+      margin: 14px 0;
+    }
+    .settings-section h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      color: #201a10;
+    }
+    .settings-section input {
+      margin-top: 10px;
+    }
+    #consentDialog[open] {
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100dvh - 18px);
+      overflow: hidden;
+    }
+    #consentDialog .consent-text {
+      max-height: none;
+      overflow: visible;
+      flex: 0 0 auto;
+      font-size: 15px;
+      line-height: 1.38;
+      padding: 14px 16px;
+      background: #fffdf8;
+      border-color: #e4d8ba;
+    }
+    #consentDialog .consent-text p {
+      margin-bottom: 8px;
+    }
+    .consent-form-scroll {
+      min-height: 0;
+      max-height: min(42vh, 360px);
+      overflow: auto;
+      padding: 2px 4px 0 0;
+    }
+    @media (max-width: 860px) {
+      .home-screen {
+        align-content: start;
+        gap: 14px;
+      }
+      .home-logo {
+        width: min(154px, 42vw);
+      }
+      .home-title h1 {
+        font-size: clamp(28px, 7vw, 40px);
+      }
+      .home-tile {
+        min-height: 62px;
+        padding-left: 66px;
+        font-size: 17px;
+      }
+      .toolbar .actions {
+        grid-template-columns: 1fr;
+      }
+      #consentDialog .consent-text {
+        font-size: 14px;
+        line-height: 1.32;
+        padding: 12px;
+      }
+      .consent-form-scroll {
+        max-height: 38vh;
+      }
+    }
   </style>
 </head>
 <body>
@@ -986,9 +1174,7 @@
           <div class="muted" id="mainSubtitle">Lista alfabética, firma grande y registros exportables.</div>
         </div>
         <div class="actions">
-          <button class="secondary" onclick="backup()">Copia</button>
-          <button class="secondary" onclick="restore()">Restaurar</button>
-          <button class="secondary" id="cloudButton" onclick="openCloudDialog()">Supabase</button>
+          <button class="secondary" id="cloudButton" onclick="openCloudDialog()">Ajustes</button>
           <button id="newBonusButton" onclick="openCreate()">Nuevo bono</button>
           <button id="newConsentButton" onclick="openConsentDialog()" hidden>Nuevo consentimiento</button>
         </div>
@@ -1055,31 +1241,33 @@
       <p><strong>Declaro no padecer enfermedades o condiciones</strong> que contraindiquen el tratamiento, salvo las ya informadas al profesional.</p>
       <p><strong>Política de cancelación:</strong> las citas deben modificarse o cancelarse con al menos 24 horas de antelación. En caso contrario, la clínica se reserva el derecho de cobrar el 50% del importe de la sesión.</p>
     </div>
-    <div class="form-grid">
-      <label class="field">
-        Nombre *
-        <input id="consentFirstName" autocomplete="off" placeholder="Nombre">
-      </label>
-      <label class="field">
-        Apellidos *
-        <input id="consentLastName" autocomplete="off" placeholder="Apellidos">
-      </label>
-      <label class="field">
-        DNI *
-        <input id="consentDni" autocomplete="off" placeholder="DNI">
-      </label>
-    </div>
-    <p class="muted">Firma del paciente</p>
-    <div class="history-item" id="consentSignatureSummary">
-      <div>
-        <div class="name" style="font-size:18px">Firma pendiente</div>
-        <div class="muted">Pulsa firmar para abrir la zona de firma.</div>
+    <div class="consent-form-scroll">
+      <div class="form-grid">
+        <label class="field">
+          Nombre *
+          <input id="consentFirstName" autocomplete="off" placeholder="Nombre">
+        </label>
+        <label class="field">
+          Apellidos *
+          <input id="consentLastName" autocomplete="off" placeholder="Apellidos">
+        </label>
+        <label class="field">
+          DNI *
+          <input id="consentDni" autocomplete="off" placeholder="DNI">
+        </label>
       </div>
-    </div>
-    <div class="actions" style="justify-content:flex-end">
-      <button class="secondary" onclick="openConsentSignatureDialog()">Firmar</button>
-      <button class="secondary" onclick="consentDialog.close()">Cancelar</button>
-      <button onclick="saveConsent()">Guardar consentimiento</button>
+      <p class="muted">Firma del paciente</p>
+      <div class="history-item" id="consentSignatureSummary">
+        <div>
+          <div class="name" style="font-size:18px">Firma pendiente</div>
+          <div class="muted">Pulsa firmar para abrir la zona de firma.</div>
+        </div>
+      </div>
+      <div class="actions" style="justify-content:flex-end">
+        <button class="secondary" onclick="openConsentSignatureDialog()">Firmar</button>
+        <button class="secondary" onclick="consentDialog.close()">Cancelar</button>
+        <button onclick="saveConsent()">Guardar consentimiento</button>
+      </div>
     </div>
   </dialog>
 
@@ -1103,13 +1291,24 @@
   </dialog>
 
   <dialog id="cloudDialog">
-    <h2>Supabase</h2>
-    <p class="muted">Conecta la app a Supabase para sincronizar datos entre tablets y no depender solo del navegador.</p>
+    <h2>Ajustes</h2>
+    <div class="settings-section">
+      <h3>Copias de seguridad</h3>
+      <p class="muted">Descarga o restaura una copia manual si alguna vez hace falta.</p>
+      <div class="actions">
+        <button class="secondary" onclick="backup()">Descargar copia</button>
+        <button class="secondary" onclick="restore()">Restaurar copia</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Sincronizacion Supabase</h3>
+      <p class="muted">Configuracion avanzada para sincronizar los datos entre dispositivos.</p>
     <input id="supabaseUrl" placeholder="URL Supabase">
     <input id="supabaseKey" placeholder="Clave publica Supabase">
     <input id="supabaseEmail" placeholder="Email de usuario">
     <input id="supabasePassword" type="password" placeholder="Contraseña">
     <p class="muted" id="cloudStatus">Sin conectar.</p>
+    </div>
     <div class="actions" style="justify-content:flex-end">
       <button class="secondary" onclick="cloudDialog.close()">Cerrar</button>
       <button class="secondary" onclick="signOutCloud()">Desconectar</button>
@@ -2012,7 +2211,7 @@
     function updateCloudStatus(message) {
       const text = message || (cloudOnline ? "Conectado a Supabase." : "Sin conectar.");
       document.querySelector("#cloudStatus").textContent = text;
-      document.querySelector("#cloudButton").textContent = cloudOnline ? "Supabase ON" : "Supabase";
+      document.querySelector("#cloudButton").textContent = "Ajustes";
     }
 
     function setCloudStatus(message) {
