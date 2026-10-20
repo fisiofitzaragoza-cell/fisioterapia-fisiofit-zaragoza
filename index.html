@@ -1425,6 +1425,7 @@
     let signatureConfirmReady = false;
     let signaturePending = null;
     let signatureBaseSessions = "";
+    let signatureBaseTotal = null;
     let consentDrawing = false;
     let consentSigned = false;
     let consentSignatureData = "";
@@ -1436,6 +1437,7 @@
     let cloudOnline = false;
     let cloudSaveTimer = null;
     let cloudSaving = false;
+    let cloudWriteQueue = Promise.resolve();
     let cloudChannel = null;
     const DEFAULT_SUPABASE_URL = "https://idwekwrpprimbiplcxzm.supabase.co";
     const DEFAULT_SUPABASE_KEY = "sb_publishable_d67JRiLMAjWYKRAU2OFl-g_eQYOiyNt";
@@ -1898,7 +1900,9 @@
       signaturePending = null;
       signatureConfirmReady = false;
       signatureBaseSessions = JSON.stringify(current.sessions);
+      signatureBaseTotal = current.total;
       document.querySelector("#saveSignatureButton").textContent = "Guardar";
+      document.querySelector("#saveSignatureButton").disabled = false;
       signed = false;
       clearCanvas();
       document.querySelector("#signRemaining").textContent = `${current.name}: ${remaining(current)} sesiones restantes antes de firmar.`;
@@ -1930,7 +1934,7 @@
         return;
       }
       if (!signaturePending) {
-        signaturePending = { patientId: patient.id, session: {
+        signaturePending = { patientId: patient.id, expectedSessions: JSON.parse(signatureBaseSessions), expectedTotal: signatureBaseTotal, session: {
           id: crypto.randomUUID(),
           date: new Date().toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
           signature: canvas.toDataURL("image/png")
@@ -1940,6 +1944,7 @@
         patient.sessions.push(signaturePending.session);
       }
       const dialogPatientId = patient.id;
+      const operationGeneration = loginGeneration;
       signatureBusy = true;
       const controls = [...signDialog.querySelectorAll("button")];
       controls.forEach(control => { control.disabled = true; });
@@ -1956,9 +1961,15 @@
           console.warn("No se pudo actualizar la copia local de la firma.", error.name);
         }
         clearTimeout(cloudSaveTimer);
-        const confirmed = await saveCloudNow();
+        const confirmed = await saveSignatureOperation(signaturePending);
         serverConfirmed = confirmed;
+        if (operationGeneration !== loginGeneration) return;
         if (!confirmed) {
+          if (signaturePending?.conflict) {
+            message.textContent = "El bono ha cambiado en otro dispositivo. La firma no se ha registrado. Cancela y recarga para revisar las sesiones antes de firmar.";
+            button.textContent = "Revisa el bono";
+            return;
+          }
           message.textContent = localSaved
             ? "Firma guardada solo en este dispositivo; Supabase no ha confirmado. Revisa la conexión y pulsa Reintentar sincronización."
             : "No se ha confirmado el guardado. Conservamos la firma en esta pantalla. Revisa la conexión y reintenta.";
@@ -1987,7 +1998,7 @@
         }
       } finally {
         signatureBusy = false;
-        controls.forEach(control => { control.disabled = false; });
+        controls.forEach(control => { control.disabled = control === button && Boolean(signaturePending?.conflict); });
       }
     }
     function openConsentDialog() {
@@ -2425,7 +2436,26 @@
       cloudSaveTimer = setTimeout(() => saveCloudNow(), 350);
     }
 
-    async function saveCloudNow() {
+    function enqueueCloudWrite(write) {
+      const generation = loginGeneration;
+      const client = supabaseClient;
+      const queuedAt = performance.now();
+      const result = cloudWriteQueue.catch(() => false).then(async () => {
+        if (generation !== loginGeneration || client !== supabaseClient) return false;
+        const waitMs = Math.round(performance.now() - queuedAt);
+        const saved = await write();
+        if (saved && window.fisioLastSaveTiming) window.fisioLastSaveTiming.queueWaitMs = waitMs;
+        return saved;
+      });
+      cloudWriteQueue = result;
+      return result;
+    }
+
+    function saveCloudNow() {
+      return enqueueCloudWrite(() => saveCloudSnapshot());
+    }
+
+    async function saveCloudSnapshot() {
       if (!cloudOnline || !supabaseClient) return false;
       cloudSaving = true;
       const generation = loginGeneration;
@@ -2467,6 +2497,69 @@
         setTimeout(() => { cloudSaving = false; }, 500);
       }
     }
+
+    function saveSignatureOperation(operation) {
+      return enqueueCloudWrite(() => saveSignatureRpc(operation));
+    }
+
+    async function saveSignatureRpc(operation) {
+      if (!cloudOnline || !supabaseClient) return false;
+      const client = supabaseClient;
+      const generation = loginGeneration;
+      const started = performance.now();
+      cloudSaving = true;
+      try {
+        const { data, error } = await client.rpc("fisiofit_append_signed_session", {
+          p_patient_id: operation.patientId,
+          p_session: operation.session,
+          p_expected_sessions: operation.expectedSessions,
+          p_expected_total: operation.expectedTotal
+        });
+        if (error?.code === "PGRST202") {
+          // PostgREST did not resolve a function, so no session was written.
+          // This is the only condition where the legacy write is safe.
+          if (generation !== loginGeneration || client !== supabaseClient) return false;
+          const saved = await saveCloudSnapshot();
+          if (saved && window.fisioLastSaveTiming) window.fisioLastSaveTiming.mode = "legacy";
+          return saved;
+        }
+        if (error) throw error;
+        const session = data?.patient?.sessions?.find(item => item.id === operation.session.id);
+        if (data?.operation_id !== operation.session.id || data?.patient?.id !== operation.patientId ||
+            !session || session.date !== operation.session.date || session.signature !== operation.session.signature) {
+          throw new Error("No se ha recibido una confirmación válida. Reintenta la misma firma.");
+        }
+        window.fisioLastSaveTiming = {
+          mode: "single-session",
+          sessionMs: 0,
+          writeConfirmationMs: Math.round(performance.now() - started),
+          totalMs: Math.round(performance.now() - started)
+        };
+        console.info("FisioBonos guardado de sesión confirmado (ms)", window.fisioLastSaveTiming);
+        if (generation === loginGeneration && client === supabaseClient) {
+          const index = patients.findIndex(item => item.id === operation.patientId);
+          if (index >= 0) patients[index] = { ...data.patient, completed: Boolean(data.patient.completed) };
+          cacheCloudState();
+        }
+        return true;
+      } catch (error) {
+        if (generation === loginGeneration && client === supabaseClient) {
+          if (error.code === "40001" || error.code === "P0002") {
+            operation.conflict = true;
+            const patient = patients.find(item => item.id === operation.patientId);
+            if (patient) patient.sessions = patient.sessions.filter(item => item.id !== operation.session.id);
+            cacheCloudState();
+          }
+          setCloudStatus(error.code === "40001"
+            ? "El bono ha cambiado en otro dispositivo. Revisa sus sesiones antes de volver a firmar."
+            : "Supabase no ha confirmado la firma: " + error.message);
+        }
+        return false;
+      } finally {
+        setTimeout(() => { cloudSaving = false; }, 500);
+      }
+    }
+
 
     function subscribeCloudChanges() {
       if (!supabaseClient || cloudChannel) return;
