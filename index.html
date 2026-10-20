@@ -1970,7 +1970,9 @@
           signaturePending = null;
           signed = false;
           signDialog.close();
+          const refreshStarted = performance.now();
           render();
+          if (window.fisioLastSaveTiming) window.fisioLastSaveTiming.displayRefreshMs = Math.round(performance.now() - refreshStarted);
         }
         updateCloudStatus(localSaved
           ? "Firma confirmada en Supabase."
@@ -2426,22 +2428,40 @@
     async function saveCloudNow() {
       if (!cloudOnline || !supabaseClient) return false;
       cloudSaving = true;
+      const generation = loginGeneration;
+      const client = supabaseClient;
+      const started = performance.now();
+      let authenticated = started;
+      let confirmed = null;
       try {
-        const { data: userData } = await supabaseClient.auth.getUser();
+        // The REST write still verifies the access token and RLS on the server.
+        // getSession reuses the cached identity instead of requesting /auth/user.
+        const { data: sessionData, error: sessionError } = await client.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!sessionData.session?.user?.id) throw new Error("La sesión ha caducado. Vuelve a entrar antes de guardar.");
+        if (generation !== loginGeneration || client !== supabaseClient) return false;
+        authenticated = performance.now();
         const payload = {
           id: "main",
           data: { patients, consents },
           updated_at: new Date().toISOString(),
-          updated_by: userData.user?.id || null
+          updated_by: sessionData.session.user.id
         };
-        const { error } = await supabaseClient
+        const { error } = await client
           .from("fisiofit_app_state")
           .upsert(payload, { onConflict: "id" });
         if (error) throw error;
-        updateCloudStatus("Sincronizado con Supabase.");
+        confirmed = performance.now();
+        window.fisioLastSaveTiming = {
+          sessionMs: Math.round(authenticated - started),
+          writeConfirmationMs: Math.round(confirmed - authenticated),
+          totalMs: Math.round(confirmed - started)
+        };
+        console.info("FisioBonos guardado confirmado (ms)", window.fisioLastSaveTiming);
+        if (generation === loginGeneration && client === supabaseClient) updateCloudStatus("Sincronizado con Supabase.");
         return true;
       } catch (error) {
-        setCloudStatus("No se pudo sincronizar: " + error.message);
+        if (generation === loginGeneration && client === supabaseClient) setCloudStatus("No se pudo sincronizar: " + error.message);
         return false;
       } finally {
         setTimeout(() => { cloudSaving = false; }, 500);
