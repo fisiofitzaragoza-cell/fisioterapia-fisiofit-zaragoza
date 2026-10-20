@@ -1200,9 +1200,9 @@
         <button class="secondary" type="button" onclick="testSupabaseFromLogin()">Probar conexión</button>
       </details>
 
-      <p class="muted" id="loginStatus">Introduce tu email y contraseña para entrar.</p>
+      <p class="muted" id="loginStatus" role="status" aria-live="polite">Introduce tu email y contraseña para entrar.</p>
       <div class="actions" style="justify-content:flex-end;margin-top:14px">
-        <button onclick="loginFromScreen()">Entrar</button>
+        <button id="loginButton" onclick="loginFromScreen()">Entrar</button>
       </div>
     </div>
   </div>
@@ -1391,6 +1391,7 @@
     </div>
   </dialog>
 
+  <script src="vendor/supabase-2.118.0.js"></script>
   <script>
     const list = document.querySelector("#list");
     const signDialog = document.querySelector("#signDialog");
@@ -1428,6 +1429,10 @@
     let consentSigned = false;
     let consentSignatureData = "";
     let supabaseClient = null;
+    let cloudClientConfig = "";
+    let loginBusy = false;
+    let loginGeneration = 0;
+    let cloudCacheAvailable = true;
     let cloudOnline = false;
     let cloudSaveTimer = null;
     let cloudSaving = false;
@@ -1496,7 +1501,9 @@
 
     function hydrateLoginScreen() {
       const config = getSupabaseConfig();
-      const saved = JSON.parse(localStorage.getItem(SAVED_LOGIN_KEY) || "{}");
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem(SAVED_LOGIN_KEY) || "{}") || {}; }
+      catch (error) { console.warn("No se pudieron leer las preferencias de acceso.", error.name); }
       document.querySelector("#loginSupabaseUrl").value = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
       document.querySelector("#loginSupabaseKey").value = config.key || DEFAULT_SUPABASE_KEY;
       document.querySelector("#loginEmail").value = saved.email || config.email || "";
@@ -1522,7 +1529,8 @@
       }
       if (!config.url || cleanSupabaseUrl(config.url) === OLD_BAD_SUPABASE_URL) {
         const fixed = { ...config, url: DEFAULT_SUPABASE_URL, key: DEFAULT_SUPABASE_KEY };
-        localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(fixed));
+        try { localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(fixed)); }
+        catch (error) { console.warn("No se pudo guardar la configuración local.", error.name); }
         return fixed;
       }
       return config;
@@ -2212,6 +2220,7 @@
     }
 
     async function loginCloud({ url, key, email, password, remember, source }) {
+      if (loginBusy) return;
       const cleanUrl = cleanSupabaseUrl(url || DEFAULT_SUPABASE_URL);
       const cleanKey = key || DEFAULT_SUPABASE_KEY;
       if (!email || !password) {
@@ -2222,26 +2231,53 @@
         setLoginOrCloudStatus(source, "Falta la configuración de Supabase.");
         return;
       }
+      loginBusy = true;
+      const generation = ++loginGeneration;
+      const button = document.querySelector(source === "login" ? "#loginButton" : "#cloudConnectButton");
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      button.textContent = "Entrando…";
+      const started = performance.now();
+      const slowNotice = setTimeout(() => {
+        setLoginOrCloudStatus(source, "La conexión está tardando. Seguimos esperando la respuesta de Supabase…");
+      }, 8000);
       try {
+        setLoginOrCloudStatus(source, "Conectando con Supabase…");
         await createCloudClient(cleanUrl, cleanKey);
+        setLoginOrCloudStatus(source, "Comprobando usuario y contraseña…");
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url: cleanUrl, key: cleanKey, email }));
-        if (remember) {
-          localStorage.setItem(SAVED_LOGIN_KEY, JSON.stringify({ remember: true, email, password }));
-        } else {
-          localStorage.removeItem(SAVED_LOGIN_KEY);
+        if (generation !== loginGeneration) return;
+        const authenticated = performance.now();
+        try {
+          localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url: cleanUrl, key: cleanKey, email }));
+          if (remember) localStorage.setItem(SAVED_LOGIN_KEY, JSON.stringify({ remember: true, email, password }));
+          else localStorage.removeItem(SAVED_LOGIN_KEY);
+        } catch (error) {
+          console.warn("No se pudieron guardar las preferencias de acceso.", error.name);
         }
         cloudOnline = true;
-        await loadCloudState(true);
+        setLoginOrCloudStatus(source, "Acceso correcto. Cargando bonos y consentimientos…");
+        await loadCloudState(true, () => generation === loginGeneration);
+        if (generation !== loginGeneration) return;
+        const loaded = performance.now();
         subscribeCloudChanges();
         document.querySelector("#supabasePassword").value = "";
-        updateCloudStatus();
+        updateCloudStatus(cloudCacheAvailable ? undefined : "Conectado a Supabase. No se pudo actualizar la copia local del navegador.");
         hideLogin();
         render();
+        console.info("FisioBonos acceso (ms)", { authentication: Math.round(authenticated - started), dataLoad: Math.round(loaded - authenticated) });
       } catch (error) {
-        cloudOnline = false;
-        setLoginOrCloudStatus(source, friendlySupabaseError(error));
+        if (generation === loginGeneration) {
+          cloudOnline = false;
+          setLoginOrCloudStatus(source, friendlySupabaseError(error));
+        }
+      } finally {
+        clearTimeout(slowNotice);
+        loginBusy = false;
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+        button.textContent = source === "login" ? "Entrar" : (cloudOnline ? "Reconectar" : "Conectar");
       }
     }
 
@@ -2290,45 +2326,63 @@
     }
 
     async function initCloudFromStorage() {
-      const config = getSupabaseConfig();
-      hydrateLoginScreen();
-      const url = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
-      const key = config.key || DEFAULT_SUPABASE_KEY;
+      const generation = loginGeneration;
       try {
+        const config = getSupabaseConfig();
+        hydrateLoginScreen();
+        const url = cleanSupabaseUrl(config.url || DEFAULT_SUPABASE_URL);
+        const key = config.key || DEFAULT_SUPABASE_KEY;
         await createCloudClient(url, key);
-        const { data } = await supabaseClient.auth.getSession();
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (generation !== loginGeneration) return;
+        if (error) throw error;
         cloudOnline = Boolean(data.session);
         if (cloudOnline) {
-          await loadCloudState(false);
+          showLogin("Restaurando sesión. Cargando bonos y consentimientos…");
+          await loadCloudState(false, () => generation === loginGeneration);
+          if (generation !== loginGeneration) return;
           subscribeCloudChanges();
           hideLogin();
         } else {
           showLogin("Introduce tu email y contraseña para entrar.");
         }
-        updateCloudStatus();
+        updateCloudStatus(cloudCacheAvailable ? undefined : "Conectado a Supabase. No se pudo actualizar la copia local del navegador.");
       } catch (error) {
+        if (generation !== loginGeneration) return;
         cloudOnline = false;
         showLogin(friendlySupabaseError(error));
       }
     }
 
     async function createCloudClient(url, key) {
-      const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm");
-      supabaseClient = createClient(url, key, {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: true
-        }
+      const config = JSON.stringify([url, key]);
+      if (supabaseClient && cloudClientConfig === config) return supabaseClient;
+      if (!window.supabase?.createClient) throw new Error("No se pudo cargar la conexión. Recarga la aplicación.");
+      supabaseClient = window.supabase.createClient(url, key, {
+        auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
       });
+      cloudClientConfig = config;
+      return supabaseClient;
     }
 
-    async function loadCloudState(askToUploadLocal) {
+    function cacheCloudState() {
+      try {
+        localStorage.setItem("fisio_preview", JSON.stringify(patients));
+        localStorage.setItem("fisio_consents", JSON.stringify(consents));
+        cloudCacheAvailable = true;
+      } catch (error) {
+        cloudCacheAvailable = false;
+        console.warn("No se pudo actualizar la copia local.", error.name);
+      }
+    }
+
+    async function loadCloudState(askToUploadLocal, isCurrent = () => true) {
       const { data, error } = await supabaseClient
         .from("fisiofit_app_state")
         .select("data, updated_at")
         .eq("id", "main")
         .maybeSingle();
+      if (!isCurrent()) return;
       if (error) throw error;
 
       const cloudPatients = Array.isArray(data?.data?.patients) ? data.data.patients : [];
@@ -2351,8 +2405,7 @@
         }
         patients = cloudPatients.map(p => ({ ...p, completed: Boolean(p.completed) }));
         consents = cloudConsents.map(normalizeConsent);
-        localStorage.setItem("fisio_preview", JSON.stringify(patients));
-        localStorage.setItem("fisio_consents", JSON.stringify(consents));
+        cacheCloudState();
         detail = null;
         expandedId = null;
         consentDetailId = null;
@@ -2405,8 +2458,7 @@
           const nextConsents = Array.isArray(payload.new.data.consents) ? payload.new.data.consents : [];
           patients = nextPatients.map(p => ({ ...p, completed: Boolean(p.completed) }));
           consents = nextConsents.map(normalizeConsent);
-          localStorage.setItem("fisio_preview", JSON.stringify(patients));
-          localStorage.setItem("fisio_consents", JSON.stringify(consents));
+          cacheCloudState();
           detail = null;
           expandedId = null;
           consentDetailId = null;
@@ -2417,6 +2469,7 @@
     }
 
     async function signOutCloud() {
+      ++loginGeneration;
       if (supabaseClient) {
         if (cloudChannel) {
           await supabaseClient.removeChannel(cloudChannel);

@@ -1,7 +1,8 @@
-const CACHE_NAME = "fisiofit-v27";
+const CACHE_NAME = "fisiofit-v28";
 const ASSETS = [
   "./",
   "./index.html",
+  "./vendor/supabase-2.118.0.js",
   "./manifest.webmanifest",
   "./icons/logo-definitivo.png",
   "./icons/icon-192.png",
