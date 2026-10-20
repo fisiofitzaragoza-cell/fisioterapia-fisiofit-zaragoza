@@ -1291,12 +1291,12 @@
 
   <dialog id="signDialog">
     <h2>Firmar sesión</h2>
-    <p class="muted" id="signRemaining">Firma grande para tablet. Antes de guardar se pedirá confirmación.</p>
+    <p class="muted" id="signRemaining" role="status" aria-live="polite">Firma grande para tablet. Antes de guardar se pedirá confirmación.</p>
     <canvas class="signature-pad" id="signature" width="1100" height="620"></canvas>
     <div class="actions" style="justify-content:flex-end">
       <button class="secondary" onclick="clearSignature()">Limpiar</button>
       <button class="secondary" onclick="signDialog.close()">Cancelar</button>
-      <button onclick="confirmSignature()">Guardar</button>
+      <button id="saveSignatureButton" onclick="confirmSignature()">Guardar</button>
     </div>
   </dialog>
 
@@ -1420,6 +1420,10 @@
     let newTotal = 10;
     let drawing = false;
     let signed = false;
+    let signatureBusy = false;
+    let signatureConfirmReady = false;
+    let signaturePending = null;
+    let signatureBaseSessions = "";
     let consentDrawing = false;
     let consentSigned = false;
     let consentSignatureData = "";
@@ -1880,24 +1884,101 @@
       render();
     }
     function openSignature(id) {
+      if (signatureBusy) return;
       current = patients.find(p => p.id === id);
+      if (!current || current.completed || remaining(current) === 0) return;
+      signaturePending = null;
+      signatureConfirmReady = false;
+      signatureBaseSessions = JSON.stringify(current.sessions);
+      document.querySelector("#saveSignatureButton").textContent = "Guardar";
       signed = false;
       clearCanvas();
       document.querySelector("#signRemaining").textContent = `${current.name}: ${remaining(current)} sesiones restantes antes de firmar.`;
       document.body.classList.add("signing");
       signDialog.showModal();
     }
-    function confirmSignature() {
-      if (!signed || !current) return;
-      if (!confirm(`¿Guardar una sesión firmada para ${current.name}?`)) return;
-      current.sessions.push({
-        date: new Date().toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-        signature: canvas.toDataURL("image/png")
-      });
-      expandedId = current.id;
-      save();
-      signDialog.close();
-      render();
+    async function confirmSignature() {
+      if (signatureBusy || !signDialog.open) return;
+      const message = document.querySelector("#signRemaining");
+      const button = document.querySelector("#saveSignatureButton");
+      if (!signed || !current) {
+        message.textContent = "Dibuja la firma antes de guardarla.";
+        return;
+      }
+      // Realtime can replace patients while the signature pad remains open.
+      const patient = patients.find(p => p.id === current.id);
+      if (!patient || patient.completed || (!signaturePending && remaining(patient) === 0)) {
+        message.textContent = "Este bono ya no está disponible para firmar. Revisa sus sesiones.";
+        return;
+      }
+      if (!signaturePending && JSON.stringify(patient.sessions) !== signatureBaseSessions) {
+        message.textContent = "Las sesiones de este bono han cambiado. Cancela y vuelve a abrirlo antes de firmar.";
+        return;
+      }
+      if (!signatureConfirmReady) {
+        signatureConfirmReady = true;
+        message.textContent = "¿Guardar una sesión firmada para " + patient.name + "? Pulsa Confirmar y guardar.";
+        button.textContent = "Confirmar y guardar";
+        return;
+      }
+      if (!signaturePending) {
+        signaturePending = { patientId: patient.id, session: {
+          id: crypto.randomUUID(),
+          date: new Date().toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+          signature: canvas.toDataURL("image/png")
+        }};
+      }
+      if (!patient.sessions.some(session => session.id === signaturePending.session.id)) {
+        patient.sessions.push(signaturePending.session);
+      }
+      const dialogPatientId = patient.id;
+      signatureBusy = true;
+      const controls = [...signDialog.querySelectorAll("button")];
+      controls.forEach(control => { control.disabled = true; });
+      button.textContent = "Guardando…";
+      message.textContent = "Esperando confirmación de Supabase…";
+      let localSaved = false;
+      let serverConfirmed = false;
+      try {
+        try {
+          save();
+          localSaved = true;
+        } catch (error) {
+          // A full localStorage must not prevent the server write.
+          console.warn("No se pudo actualizar la copia local de la firma.", error.name);
+        }
+        clearTimeout(cloudSaveTimer);
+        const confirmed = await saveCloudNow();
+        serverConfirmed = confirmed;
+        if (!confirmed) {
+          message.textContent = localSaved
+            ? "Firma guardada solo en este dispositivo; Supabase no ha confirmado. Revisa la conexión y pulsa Reintentar sincronización."
+            : "No se ha confirmado el guardado. Conservamos la firma en esta pantalla. Revisa la conexión y reintenta.";
+          button.textContent = "Reintentar sincronización";
+          return;
+        }
+        if (signDialog.open && current?.id === dialogPatientId) {
+          expandedId = dialogPatientId;
+          signaturePending = null;
+          signed = false;
+          signDialog.close();
+          render();
+        }
+        updateCloudStatus(localSaved
+          ? "Firma confirmada en Supabase."
+          : "Firma confirmada en Supabase. No se pudo actualizar la copia local: el almacenamiento del navegador puede estar lleno.");
+      } catch (error) {
+        if (serverConfirmed) {
+          message.textContent = "Firma confirmada en Supabase. No se pudo actualizar la pantalla; recarga para verla. No repitas la firma.";
+          updateCloudStatus(message.textContent);
+        } else {
+          message.textContent = "No se ha podido completar el guardado. Conservamos la firma para reintentar. " + error.message;
+          button.textContent = "Reintentar sincronización";
+        }
+      } finally {
+        signatureBusy = false;
+        controls.forEach(control => { control.disabled = false; });
+      }
     }
     function openConsentDialog() {
       document.querySelector("#consentFirstName").value = "";
@@ -2290,7 +2371,7 @@
     }
 
     async function saveCloudNow() {
-      if (!cloudOnline || !supabaseClient) return;
+      if (!cloudOnline || !supabaseClient) return false;
       cloudSaving = true;
       try {
         const { data: userData } = await supabaseClient.auth.getUser();
@@ -2305,8 +2386,10 @@
           .upsert(payload, { onConflict: "id" });
         if (error) throw error;
         updateCloudStatus("Sincronizado con Supabase.");
+        return true;
       } catch (error) {
         setCloudStatus("No se pudo sincronizar: " + error.message);
+        return false;
       } finally {
         setTimeout(() => { cloudSaving = false; }, 500);
       }
@@ -2317,7 +2400,7 @@
       cloudChannel = supabaseClient
         .channel("fisiofit_app_state_changes")
         .on("postgres_changes", { event: "*", schema: "public", table: "fisiofit_app_state", filter: "id=eq.main" }, payload => {
-          if (cloudSaving || !payload.new?.data) return;
+          if (cloudSaving || signaturePending || !payload.new?.data) return;
           const nextPatients = Array.isArray(payload.new.data.patients) ? payload.new.data.patients : [];
           const nextConsents = Array.isArray(payload.new.data.consents) ? payload.new.data.consents : [];
           patients = nextPatients.map(p => ({ ...p, completed: Boolean(p.completed) }));
@@ -2402,7 +2485,13 @@
       ctx.textAlign = "center";
       ctx.fillText("Firma aquí", canvas.width / 2, canvas.height / 2);
     }
-    function clearSignature() { signed = false; clearCanvas(); }
+    function clearSignature() {
+      if (signatureBusy || signaturePending) return;
+      signed = false;
+      signatureConfirmReady = false;
+      document.querySelector("#saveSignatureButton").textContent = "Guardar";
+      clearCanvas();
+    }
     function clearConsentCanvas() {
       consentCtx.clearRect(0, 0, consentCanvas.width, consentCanvas.height);
       consentCtx.fillStyle = "#fff";
@@ -2424,6 +2513,7 @@
       return { x: (touch.clientX - rect.left) * (consentCanvas.width / rect.width), y: (touch.clientY - rect.top) * (consentCanvas.height / rect.height) };
     }
     function startDraw(event) {
+      if (signatureBusy || signaturePending) return;
       event.preventDefault();
       if (!signed) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2437,7 +2527,7 @@
       ctx.moveTo(p.x, p.y);
     }
     function moveDraw(event) {
-      if (!drawing) return;
+      if (signatureBusy || signaturePending || !drawing) return;
       event.preventDefault();
       const p = point(event);
       ctx.lineWidth = 7;
@@ -2517,7 +2607,13 @@
     consentCanvas.addEventListener("touchstart", startConsentDraw, { passive: false });
     consentCanvas.addEventListener("touchmove", moveConsentDraw, { passive: false });
     window.addEventListener("touchend", endConsentDraw);
-    signDialog.addEventListener("close", () => document.body.classList.remove("signing"));
+    signDialog.addEventListener("cancel", event => {
+      if (signatureBusy) event.preventDefault();
+    });
+    signDialog.addEventListener("close", () => {
+      document.body.classList.remove("signing");
+      if (!signatureBusy) signaturePending = null;
+    });
     consentSignDialog.addEventListener("close", () => document.body.classList.remove("consent-signing"));
     document.querySelector("#restoreFile").addEventListener("change", async event => {
       const file = event.target.files[0];
