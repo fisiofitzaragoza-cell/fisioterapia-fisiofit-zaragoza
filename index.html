@@ -1441,6 +1441,7 @@
     let consentBusy = false;
     let consentConfirmReady = false;
     let consentPending = null;
+    let consentDraftIdentity = null;
     let supabaseClient = null;
     let cloudClientConfig = "";
     let loginBusy = false;
@@ -2023,6 +2024,7 @@
       }
       consentPending = null;
       consentConfirmReady = false;
+      consentDraftIdentity = null;
       consentDialog.querySelectorAll("button,input").forEach(control => { control.disabled = false; });
       document.querySelector("#consentFirstName").value = "";
       document.querySelector("#consentLastName").value = "";
@@ -2075,12 +2077,13 @@
       const button = document.querySelector("#saveConsentButton");
       button.disabled = consentBusy || !ready;
       if (!consentBusy) button.textContent = consentPending ? "Reintentar guardado" : (consentConfirmReady ? "Confirmar y guardar" : "Guardar consentimiento");
-      document.querySelector("#downloadConsentDraftButton").disabled = consentBusy || !consentSignatureData;
+      document.querySelector("#downloadConsentDraftButton").disabled = consentBusy || !ready;
     }
     function makeConsentRecord() {
-      const now = new Date();
+      if (!consentDraftIdentity) consentDraftIdentity = { id: crypto.randomUUID(), iso: new Date().toISOString() };
+      const now = new Date(consentDraftIdentity.iso);
       return normalizeConsent({
-        id: crypto.randomUUID(), ...readConsentForm(),
+        id: consentDraftIdentity.id, ...readConsentForm(),
         date: now.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
         iso: now.toISOString(), signature: consentSignatureData,
         documentText: consentDocumentText(), textVersion: "fisiofit-consent-v1"
@@ -2160,6 +2163,11 @@
       }
     }
     function downloadConsentDraft() {
+      const fields = readConsentForm();
+      if (!fields.firstName || !fields.lastName || !fields.dni) {
+        document.querySelector("#consentSaveStatus").textContent = "Completa nombre, apellidos y DNI antes de descargar el borrador firmado.";
+        return;
+      }
       if (!consentSignatureData) {
         document.querySelector("#consentSaveStatus").textContent = "Acepta la firma antes de descargar el borrador.";
         return;
@@ -2187,6 +2195,7 @@
           throw new Error("El archivo no es un borrador firmado de FisioBonos.");
         }
         const record = normalizeConsent(draft.consent);
+        if (!record.firstName.trim() || !record.lastName.trim() || !record.dni.trim()) throw new Error("El borrador no contiene todos los datos del consentimiento.");
         const existing = consents.find(item => item.id === record.id);
         if (existing) {
           status.textContent = "Este consentimiento ya aparece guardado. No se añadirá otra copia.";
