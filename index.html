@@ -1166,8 +1166,13 @@
         line-height: 1.32;
         padding: 12px;
       }
+      #consentDialog[open] {
+        display: block;
+        overflow-y: auto;
+      }
       .consent-form-scroll {
-        max-height: 38vh;
+        max-height: none;
+        overflow: visible;
       }
     }
   </style>
@@ -1324,6 +1329,7 @@
           <input id="consentDni" autocomplete="off" placeholder="DNI">
         </label>
       </div>
+      <p id="consentSaveStatus" class="muted" role="status" aria-live="polite">Completa nombre, apellidos y DNI y acepta la firma antes de guardar.</p>
       <p class="muted">Firma del paciente</p>
       <div class="history-item" id="consentSignatureSummary">
         <div>
@@ -1334,11 +1340,14 @@
       <div class="actions" style="justify-content:flex-end">
         <button class="secondary" onclick="openConsentSignatureDialog()">Firmar</button>
         <button class="secondary" onclick="consentDialog.close()">Cancelar</button>
-        <button onclick="saveConsent()">Guardar consentimiento</button>
+        <button id="downloadConsentDraftButton" class="secondary" onclick="downloadConsentDraft()" disabled>Descargar borrador firmado</button>
+        <button class="secondary" onclick="importConsentDraft()">Recuperar borrador</button>
+        <button id="saveConsentButton" onclick="saveConsent()" disabled>Guardar consentimiento</button>
       </div>
     </div>
   </dialog>
 
+  <input id="consentDraftFile" type="file" accept=".json,application/json" hidden>
   <dialog id="consentSignDialog">
     <h2>Firma del consentimiento</h2>
     <p class="muted">Firma grande para tablet. Al aceptar volveras al formulario del consentimiento.</p>
@@ -1429,6 +1438,9 @@
     let consentDrawing = false;
     let consentSigned = false;
     let consentSignatureData = "";
+    let consentBusy = false;
+    let consentConfirmReady = false;
+    let consentPending = null;
     let supabaseClient = null;
     let cloudClientConfig = "";
     let loginBusy = false;
@@ -2002,6 +2014,16 @@
       }
     }
     function openConsentDialog() {
+      if (consentBusy) return;
+      if (consentPending && consentPending.generation === loginGeneration && consentPending.client === supabaseClient) {
+        consentDialog.showModal();
+        document.querySelector("#consentSaveStatus").textContent = "Hay un consentimiento pendiente de confirmación. Puedes reintentar o descargar su borrador firmado.";
+        updateConsentSaveState();
+        return;
+      }
+      consentPending = null;
+      consentConfirmReady = false;
+      consentDialog.querySelectorAll("button,input").forEach(control => { control.disabled = false; });
       document.querySelector("#consentFirstName").value = "";
       document.querySelector("#consentLastName").value = "";
       document.querySelector("#consentDni").value = "";
@@ -2009,9 +2031,13 @@
       consentSignatureData = "";
       clearConsentCanvas();
       updateConsentSignatureSummary();
+      document.querySelector("#consentSaveStatus").textContent = "Completa nombre, apellidos y DNI y acepta la firma antes de guardar.";
+      updateConsentSaveState();
       consentDialog.showModal();
     }
     function openConsentSignatureDialog() {
+      if (consentBusy || consentPending) return;
+      consentConfirmReady = false;
       consentSigned = false;
       clearConsentCanvas();
       document.body.classList.add("consent-signing");
@@ -2024,6 +2050,9 @@
       }
       consentSignatureData = consentCanvas.toDataURL("image/png");
       updateConsentSignatureSummary();
+      consentConfirmReady = false;
+      document.querySelector("#consentSaveStatus").textContent = "Firma preparada. Revisa los datos y guarda el consentimiento.";
+      updateConsentSaveState();
       consentSignDialog.close();
     }
     function updateConsentSignatureSummary() {
@@ -2033,38 +2062,151 @@
         ? `<img class="signature-preview" src="${consentSignatureData}" alt="Firma del consentimiento"><div><div class="name" style="font-size:18px">Firma preparada</div><div class="muted">Puedes guardar el consentimiento.</div></div>`
         : `<div><div class="name" style="font-size:18px">Firma pendiente</div><div class="muted">Pulsa firmar para abrir la zona de firma.</div></div>`;
     }
-    function saveConsent() {
-      const firstName = document.querySelector("#consentFirstName").value.trim();
-      const lastName = document.querySelector("#consentLastName").value.trim();
-      const dni = document.querySelector("#consentDni").value.trim().toUpperCase();
-      if (!firstName || !lastName || !dni) {
-        alert("Completa nombre, apellidos y DNI.");
+    function readConsentForm() {
+      return {
+        firstName: document.querySelector("#consentFirstName").value.trim(),
+        lastName: document.querySelector("#consentLastName").value.trim(),
+        dni: document.querySelector("#consentDni").value.trim().toUpperCase()
+      };
+    }
+    function updateConsentSaveState() {
+      const fields = readConsentForm();
+      const ready = Boolean(fields.firstName && fields.lastName && fields.dni && consentSignatureData);
+      const button = document.querySelector("#saveConsentButton");
+      button.disabled = consentBusy || !ready;
+      if (!consentBusy) button.textContent = consentPending ? "Reintentar guardado" : (consentConfirmReady ? "Confirmar y guardar" : "Guardar consentimiento");
+      document.querySelector("#downloadConsentDraftButton").disabled = consentBusy || !consentSignatureData;
+    }
+    function makeConsentRecord() {
+      const now = new Date();
+      return normalizeConsent({
+        id: crypto.randomUUID(), ...readConsentForm(),
+        date: now.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        iso: now.toISOString(), signature: consentSignatureData,
+        documentText: consentDocumentText(), textVersion: "fisiofit-consent-v1"
+      });
+    }
+    async function saveConsent() {
+      if (consentBusy || !consentDialog.open) return;
+      const status = document.querySelector("#consentSaveStatus");
+      const fields = readConsentForm();
+      if (!fields.firstName || !fields.lastName || !fields.dni) {
+        status.textContent = "Completa nombre, apellidos y DNI antes de guardar.";
         return;
       }
       if (!consentSignatureData) {
-        alert("Falta la firma del paciente.");
+        status.textContent = "Falta aceptar la firma del paciente.";
         return;
       }
-      if (!confirm(`¿Guardar consentimiento informado de ${firstName} ${lastName}?`)) return;
-      const now = new Date();
-      const consent = normalizeConsent({
-        id: crypto.randomUUID(),
-        firstName,
-        lastName,
-        dni,
-        date: now.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-        iso: now.toISOString(),
-        signature: consentSignatureData,
-        documentText: consentDocumentText(),
-        textVersion: "fisiofit-consent-v1"
-      });
-      consents.push(consent);
-      section = "consents";
-      consentDetailId = consent.id;
-      save();
-      consentDialog.close();
-      render();
+      if (!consentConfirmReady) {
+        consentConfirmReady = true;
+        status.textContent = "¿Guardar el consentimiento de " + fields.firstName + " " + fields.lastName + "? Pulsa Confirmar y guardar.";
+        updateConsentSaveState();
+        return;
+      }
+      if (!consentPending) consentPending = { record: makeConsentRecord(), generation: loginGeneration, client: supabaseClient };
+      const operation = consentPending;
+      if (operation.generation !== loginGeneration || operation.client !== supabaseClient) {
+        status.textContent = "La sesión de acceso ha cambiado. Descarga el borrador firmado antes de volver a entrar.";
+        return;
+      }
+      consentBusy = true;
+      const controls = [...consentDialog.querySelectorAll("button, input")];
+      controls.forEach(control => { control.disabled = true; });
+      const button = document.querySelector("#saveConsentButton");
+      button.textContent = "Guardando…";
+      status.textContent = "Esperando confirmación de Supabase. Conservamos el formulario y la firma.";
+      let confirmed = Boolean(operation.confirmed);
+      try {
+        if (!confirmed) {
+          confirmed = await enqueueCloudWrite(async () => {
+            const existing = consents.find(item => item.id === operation.record.id);
+            if (existing && JSON.stringify(normalizeConsent(existing)) !== JSON.stringify(operation.record)) {
+              throw new Error("Ya existe un consentimiento diferente con este identificador.");
+            }
+            const nextConsents = existing ? consents : [...consents, operation.record];
+            return saveCloudSnapshot({ patients, consents: nextConsents });
+          });
+          operation.confirmed = confirmed;
+        }
+        if (operation.generation !== loginGeneration || operation.client !== supabaseClient || consentPending !== operation) return;
+        if (!confirmed) {
+          status.textContent = "Supabase no ha confirmado el guardado. La firma sigue aquí. Reintenta o descarga el borrador firmado antes de cerrar.";
+          return;
+        }
+        if (!consents.some(item => item.id === operation.record.id)) consents.push(operation.record);
+        cacheCloudState();
+        section = "consents";
+        consentDetailId = operation.record.id;
+        consentPending = null;
+        consentConfirmReady = false;
+        consentDialog.close();
+        render();
+        updateCloudStatus(cloudCacheAvailable
+          ? "Consentimiento confirmado en Supabase."
+          : "Consentimiento confirmado en Supabase. No se pudo actualizar la copia local del navegador.");
+      } catch (error) {
+        if (operation.generation !== loginGeneration || operation.client !== supabaseClient) return;
+        if (confirmed) {
+          status.textContent = "Consentimiento confirmado en Supabase. No se pudo actualizar la pantalla. No repitas el consentimiento.";
+          updateCloudStatus(status.textContent);
+        } else {
+          status.textContent = "No se ha confirmado el guardado. Conservamos el formulario y la firma. " + error.message;
+        }
+      } finally {
+        consentBusy = false;
+        controls.forEach(control => { control.disabled = Boolean(consentPending) && (control.matches("input") || control.getAttribute("onclick") === "openConsentSignatureDialog()" || control.getAttribute("onclick") === "importConsentDraft()"); });
+        updateConsentSaveState();
+      }
     }
+    function downloadConsentDraft() {
+      if (!consentSignatureData) {
+        document.querySelector("#consentSaveStatus").textContent = "Acepta la firma antes de descargar el borrador.";
+        return;
+      }
+      const record = consentPending?.record || makeConsentRecord();
+      const blob = new Blob([JSON.stringify({ format: "fisiofit-consent-draft-v1", consent: record }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "fisiofit_consentimiento_pendiente.json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    function importConsentDraft() {
+      if (consentBusy || consentPending) return;
+      document.querySelector("#consentDraftFile").click();
+    }
+    async function loadConsentDraftFile(file) {
+      const status = document.querySelector("#consentSaveStatus");
+      try {
+        if (!file || file.size > 3000000) throw new Error("El archivo no es un borrador válido.");
+        const draft = JSON.parse(await file.text());
+        if (draft.format !== "fisiofit-consent-draft-v1" || !draft.consent ||
+            !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(draft.consent.signature || "") ||
+            draft.consent.signature.length > 2000000 || typeof draft.consent.id !== "string") {
+          throw new Error("El archivo no es un borrador firmado de FisioBonos.");
+        }
+        const record = normalizeConsent(draft.consent);
+        const existing = consents.find(item => item.id === record.id);
+        if (existing) {
+          status.textContent = "Este consentimiento ya aparece guardado. No se añadirá otra copia.";
+          return;
+        }
+        document.querySelector("#consentFirstName").value = record.firstName;
+        document.querySelector("#consentLastName").value = record.lastName;
+        document.querySelector("#consentDni").value = record.dni;
+        consentSignatureData = record.signature;
+        consentPending = { record, generation: loginGeneration, client: supabaseClient };
+        consentConfirmReady = true;
+        updateConsentSignatureSummary();
+        consentDialog.querySelectorAll("input").forEach(input => { input.disabled = true; });
+        status.textContent = "Borrador firmado recuperado. Pulsa Reintentar guardado para enviarlo a Supabase.";
+        updateConsentSaveState();
+      } catch (error) {
+        status.textContent = "No se pudo recuperar el borrador. " + error.message;
+      }
+    }
+
     function deleteConsent(id) {
       const consent = consents.find(item => item.id === id);
       if (!consent) return;
@@ -2455,7 +2597,7 @@
       return enqueueCloudWrite(() => saveCloudSnapshot());
     }
 
-    async function saveCloudSnapshot() {
+    async function saveCloudSnapshot(snapshot = null) {
       if (!cloudOnline || !supabaseClient) return false;
       cloudSaving = true;
       const generation = loginGeneration;
@@ -2473,7 +2615,7 @@
         authenticated = performance.now();
         const payload = {
           id: "main",
-          data: { patients, consents },
+          data: snapshot || { patients, consents },
           updated_at: new Date().toISOString(),
           updated_by: sessionData.session.user.id
         };
@@ -2781,6 +2923,17 @@
       if (!signatureBusy) signaturePending = null;
     });
     consentSignDialog.addEventListener("close", () => document.body.classList.remove("consent-signing"));
+    consentDialog.addEventListener("cancel", event => { if (consentBusy) event.preventDefault(); });
+    ["#consentFirstName", "#consentLastName", "#consentDni"].forEach(selector => document.querySelector(selector).addEventListener("input", () => {
+      if (consentPending) return;
+      consentConfirmReady = false;
+      document.querySelector("#consentSaveStatus").textContent = "Revisa los datos y guarda el consentimiento.";
+      updateConsentSaveState();
+    }));
+    document.querySelector("#consentDraftFile").addEventListener("change", async event => {
+      if (event.target.files[0]) await loadConsentDraftFile(event.target.files[0]);
+      event.target.value = "";
+    });
     document.querySelector("#restoreFile").addEventListener("change", async event => {
       const file = event.target.files[0];
       if (!file) return;
